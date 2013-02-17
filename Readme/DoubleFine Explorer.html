@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<title>Telltale Music Extractor ReadMe</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<style type="text/css">
+		<!--
+		.style7 {font-family: Verdana, Arial, Helvetica, sans-serif}
+		.style10 {font-size: large}
+		.style11 {
+			font-weight: bold;
+			font-style: italic;
+			  }
+.	style12 {font-size: small}
+		-->
+	</style>
+	</head>
+
+<body>
+	<span class="style7">
+		<span class="style10">Monkey Island Explorer <br>
+			By Bgbennyboy<br>
+			Version 0.5.0<br>
+			<a href="http://quick.mixnmojo.com">Http://quick.mixnmojo.com</a></span><br><br>
+		</span>
+
+	<p class="style7"><strong><em>New in this version (0.5.0):</em></strong></p>
+	<ul>
+		<li class="style7">Fixed XBox support - a stupid object orientation bug meant that the XBox versions of the games were not detected correctly so things like image viewing didnt work. See the XBox section below for more info on using the XBox versions.</li><br>
+	</ul>		
+		
+	<p class="style7"><strong><em>New in the previous version (0.4.0):</em></strong></p>
+	<ul>
+		<li class="style7">Added support for playing and dumping the audio from both games (music, voice and sfx).<br>
+		Some of the music for Monkey Island 1 is in xWMA format - xWMAEncode.exe needs to be in the same folder as the program so that music in this format can be played and dumped. See the <a href=#limitations>limitations section</a> below for information on where to get this file.</li><br>
+	
+		<li class="style7">Added annotations feature - this lets the program use much more descriptive filenames for audio than those included in the files. See the <a href=#annotations>annotations section</a> below for more information.</li><br>
+	
+		<li class="style7">Saved games are now grouped under a 'saved games' category, rather than cluttering up the 'View' menu like they did before.</li><br>
+	</ul>
+	
+
+	<p class="style7"><strong><em>What is Monkey Island Explorer?:</em></strong><br>
+		An explorer tool for Monkey Island 1 Special Edition and Monkey Island 2 Special Edition.<br>
+		It does the following:
+		
+	<ul class="style7">
+		<li>Lets you browse through the game's files and dump individual files/all files.</li>
+		<li>Lets you play and dump the audio (music, speech and sfx).</li>
+		<li>Displays the images as you browse and lets you save them as PNG's or DDS files (for editing)</li>
+		<li>Displays the txt, fx and csv text as you browse through the files.</li>
+		<li>Together with my <a href="http://quick.mixnmojo.com/software#miimageconverter"> Monkey Island Image Converter</a> it forms part of a toolset that enables you to edit the images and put them back into the games (eg to create the much talked about 'hair patch').
+	</ul>		
+		
+	</p>
+
+	
+
+	<p class="style7"><em><strong>What do I need to use this?:</strong></em><br> 
+		Just the games themselves.
+	</p>
+	
+
+	<p class="style7"><em><strong>How to use it:</strong></em><br>
+	<ul>
+		<li class="style7">Click <i><u>Open</i></u> and either click on open folder or choose one of the games and the game folder will automatically be found. Choose a .pak file to browse the data or go to the audio folder and choose a .xwb file to browse the audio.</li><br>
+		<li class="style7">Click <i><u>Save File</i></u> to save a file. Different options will appear here depending on the type of file you've selected.</li><br>
+
+		<li class="style7">Click <i><u>Save All Files</i></u> to save all files. Different options will be available here depending on the type of files available in the currently open resource file.</li><br>
+	</ul>
+		<p class="style7">Filtering the files:</p>
+
+	<ul>
+		<li class="style7">Click on the <i><u>View</i></u> button to show a list of all the different file types, selecting one of these changes the view so that only these file types are visible.</li><br>
+		<li class="style7">To reset the view and show all files, click the button again and click <i><u>View All Files</i></u>.</li> 
+	</ul>	
+		<p class="style7">Searching the files:</p>
+	<ul>
+
+		<li class="style7">To search just type in the search box. Searching ignores any filter that you've used. I.e. the view will be reset to 'All Files'. The search looks in file names and is an 'instant search' - the search happens as you type.</li><br>
+		<li class="style7">To reset the view either delete the text in the search box or click the View button and select View all files.</li><br>
+	</ul>
+
+	</p>
+	
+	<p class="style7"><strong><em>The XBox 360 versions:</em></strong></p>
+		<p class="style7">Both MI1 and MI2 Special Editions were released for XBox - and both should work with this program. However you will need to decompress the .pak file with the XBDecompress tool first (google for it).<br>
+			I have not tested the XBox games myself but others have, and have said that they work.</p>
+	
+
+	<p class="style7" id="annotations"><em><strong>Annotation support:</strong></em><br>
+		The program supports 'annotations'. These contain alternative filenames for audio that are more descriptive than those present in the original audio files. Eg the MI2 speech annotation file means that instead of a filename of <i>"5840"</i> you will instead see <i>"Stan's Kozy Krypts-- A Place to Spend Eternity, Not a Fortune."</i><br><br>
+		Annotation files are included for MI2 speech and commentary files. If you create an annotation file for any of the other files please send it me so I can include it in a future release of the program.<br>
+	</p>
+	
+	<p class="style7"><em><strong>Creating annotation files:</strong></em><br>
+		Annotation support is activated by creating an .annot file and putting it in the 'Annotations' folder. The format is fairly straighforward and you can get an idea from looking at the included annotations but the following is a brief guide to the structure of an annotation ini file.<br><br>
+		
+		Annotations are ini files. Each ini must have an [Info Header] section that will look something like this:<br><br>
+		<code>
+			&nbsp;&nbsp;Title=Monkey Island 2 - Special Edition - Commentary<br>
+			&nbsp;&nbsp;UniqueFile1=29<br>
+			&nbsp;&nbsp;UniqueFile2=30<br>
+			&nbsp;&nbsp;NoFiles=31<br><br>
+		</code>
+		Some audio files have proper filenames for each track while others just have numbers, the program uses <b>UniqueFile1</b>, <b>UniqueFile2</b> and <b>NoFiles</b> to automatically identify the audio file that the ini corresponds to<br>
+		UniqueFile1 and UniqueFile2 should be filenames that are unique and only appear together in that audio file. If the audio file just has numbers for names then these should be the name of the last two tracks<br>
+		NoFiles is the number of tracks inside the audio file. Its important that this is correct or the audio file wont be detected.<br><br>
+		
+		The rest of the entries will look something like this:<br><br>
+
+		<code>
+			&nbsp;&nbsp;[61]<br>
+			&nbsp;&nbsp;Annotation=I just have this nagging feeling I left the gas on in my restaurant.<br><br>
+		</code>
+		
+		The text between [] should be the original filename of the track.<br>
+
+		The "Annotation=" text is the new filename<br><br>
+		
+
+		Certain characters arent allowed in Windows filenames (/\:*?"|) so these are removed from filenames when dumping.<br>
+		There are two exceptions to this:<br>
+		<ul class="style7">
+		<li>The forward slash character "/". <br>
+			If this is used then it becomes "-" in filenames. Eg "Annotation=c/o  LeChuck's Island Getaway & Spa" would become "c-o  LeChuck's Island Getaway & Spa"<br></li>
+		<li>The colon character ":".<br>
+			If this is used then it becomes " -" in filenames. Eg "Annotation=I should warn you: I'm heavily armed." would become "I should warn you - I'm heavily armed."<br></li>
+		</ul>
+	</p>	
+	
+	<p class="style7"  id="limitations"><em><strong>Limitations:</strong></em><br> 
+		Some of the music for Monkey Island 1 is in xWMA format - xWMAEncode.exe needs to be in the same folder as the program so that music in this format can be played and dumped.<br>
+		xWMAEncode.exe is part of the <a href="http://msdn.microsoft.com/en-us/directx/aa937788.aspx">DirectX SDK</a>, alternatively you may be able to get it from <a href="http://www.enbclan.com/?page=downloads">this page.</a>
+	</p>
+	
+	<p class="style7"><em><strong>Source:</strong></em><br> 
+		I will put the source on Google Code within the next week or so. See my site for details.
+	</p>
+	
+	<p class="style7"><em><strong>Thanks:</strong></em><br> 
+		Jimmi Thogersen (Serge`) for infomation on the DXT file format and the MI1 pak format.<br>
+		Jott for his work on the MI1 pak format.<br>
+		Scott Talley for his mappings for the MI2 speech and commentary.<br>
+	</p>
+	
+	<p class="style7"><em><strong>Support:</strong></em>
+		<br>
+		<a href="http://quick.mixnmojo.com/contact">Contact me</a>.
+		<br><br>
+		All my software is completely free. If you find this program useful please consider making a donation. This can be done on my website.
+	</p>
+	
+	<br>
+	<p class="style7 style12">bgbennyboy 14/09/11</p>
+</body>
+</html>
