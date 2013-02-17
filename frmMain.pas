@@ -24,16 +24,12 @@
 TODO
 IRON BRIGADE PATH AND TEST
 Costume quest support
-Middle manager?
 change busy animation
-Tiny mp3 files dont play
-Save as - mp3 not wav
-Graceful exit and proper checks in audio
+Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
 Audio controls arent centred
-
+Extra filetypes for iron brigade and costume quest - add
 
 Account for files with same name?
-Proper parser for delimitedtext not just with ; or , - indents etc
 }
 unit frmMain;
 

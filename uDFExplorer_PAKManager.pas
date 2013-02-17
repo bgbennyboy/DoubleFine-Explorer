@@ -297,9 +297,13 @@ Think this is the structure
 
 
   //Read header
-  fBundle.Position := 4;
+  fBundle.Position      := 4;
   Version               := fBundle.ReadByte; //not dword man_trivial on the cave has other stuff after byte 1
   fBundle.Seek(3, soFromCurrent);
+
+  if Version <> 5 then //Check version and warn if unknown
+    Log('WARNING: Unknown DFPF version: ' + inttostr(Version));
+
   FileExtensionOffset   := fBundle.ReadQWord;  //Or alignment?   table 1 - type table pointer
   NameDirOffset         := fBundle.ReadQWord;                    //fn table pointer
   FileExtensionCount    := fBundle.ReadDWord;                    //number of types
@@ -315,7 +319,7 @@ Think this is the structure
   Unknown               := fBundle.ReadDWord;
   Marker2               := fBundle.ReadDWordLe;                    //marker again  23A1CEABh
 
-  Log(' Version '             + inttostr(Version ) );
+  {Log(' Version '             + inttostr(Version ) );
   Log(' FileExtensionOffset ' + inttostr( FileExtensionOffset) );
   Log(' NameDirOffset '       + inttostr(NameDirOffset ) );
   Log(' FileExtension count ' + inttostr( FileExtensionCount) );
@@ -330,8 +334,8 @@ Think this is the structure
   Log(' Footer offset 2 '     + inttostr(FooterOffset2 ) );
   Log(' Unknown '             + inttostr( Unknown) );
   Log(' Marker 2 '            + inttostr( Marker2) );
-  Log('');
-                                           //Check version and warn if unknown
+  Log('');}
+
 
   //Parse files
   for I := 0 to numFiles - 1 do   //16 bytes
@@ -339,20 +343,20 @@ Think this is the structure
     fBundle.Position  := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject        := TDFFile.Create;
 
-    fBundle.Position := FileRecordsOffset + (sizeOfFileRecord * i);
-    FileObject.UnCompressedSize :=  (fBundle.ReadDWord shr 8) ; //fBundle.ReadTriByte;   //when decompressed
-    fbundle.Seek(-1, sofromcurrent);
-    FileObject.NameOffset := (fBundle.ReadDWord)shr 11; //(fbundle.ReadTriByte shr 11); specs wrong - from from byte 3 not 4
-    fbundle.Seek(1, sofromcurrent);
-    FileObject.Offset := fBundle.ReadDWord shr 3;
+    fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
+    FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 8) ; //fBundle.ReadTriByte;   //when decompressed
+    fBundle.Seek(-1, sofromcurrent);
+    FileObject.NameOffset           := (fBundle.ReadDWord)shr 11; //(fbundle.ReadTriByte shr 11); specs wrong - from from byte 3 not 4
+    fBundle.Seek(1, sofromcurrent);
+    FileObject.Offset               := fBundle.ReadDWord shr 3;
     fBundle.Seek(-1, soFromCurrent);
-    FileObject.Size := (fBundle.ReadDWord shl 5) shr 9; //Size in the p file
+    FileObject.Size                 := (fBundle.ReadDWord shl 5) shr 9; //Size in the p file
     fBundle.Seek(-1, soFromCurrent);
-    FileObject.FileTypeIndex := (fBundle.ReadDWord shl 4) shr 24; 
+    FileObject.FileTypeIndex        := (fBundle.ReadDWord shl 4) shr 24;
     if Version = 5 then
-      FileObject.FileTypeIndex := FileObject.FileTypeIndex shr 1; //normalise it
+      FileObject.FileTypeIndex      := FileObject.FileTypeIndex shr 1; //normalise it
     fBundle.Seek(-3, soFromCurrent);
-    FileObject.CompressionType := fBundle.ReadByte {and 15}; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compessed vs decompressed sizes when dumping.
+    FileObject.CompressionType      := fBundle.ReadByte {and 15}; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compessed vs decompressed sizes when dumping.
 
 
     //Get filename from filenames table

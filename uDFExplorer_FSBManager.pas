@@ -62,7 +62,7 @@ type
     property FileType[Index: integer]: TFileType read GetFileType;
     property FileExtension[Index: integer]: string read GetFileExtension;
   end;
-                         //TODO replace all references to fbundle to fmemorybundle
+
 const
     strErrInvalidFile:  string  = 'Not a valid FSB file';
     Key1: array [0..9] of byte = ($44, $46, $6D, $33, $74, $34, $6C, $46, $54, $57); //DFm3t4lFTW
@@ -268,7 +268,7 @@ var
   TempStr: string;
   FileObject: TFSBFile;
   NumSamples, SampleHeaderSize, Datasize, Version, HeadMode, NameOffset, 
-    FileOffset, i, Size, Samples, lengthsamples, lengthcompressedbytes, PrevOffsetAndSize: integer; 
+    FileOffset, i, Size, Samples, PrevOffsetAndSize: integer;
 begin
   fMemoryBundle.Position := 0;
   TempStr := fMemoryBundle.ReadBlockName;

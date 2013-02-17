@@ -41,6 +41,7 @@ implementation
 
 function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
 begin
+  {The Cave types}
   if FileExt = 'AchievementIdMap' then result:= ft_DelimitedText //
   else
   if FileExt = 'AnimEventList' then result:= ft_DelimitedText //
@@ -58,6 +59,12 @@ begin
   if FileExt = 'Blob' then
     if ActualFileExt = '.LUA' then
       result:= ft_Text
+    else
+    if ActualFileExt = '.PNG' then
+      result:= ft_GenericImage //in stacking
+    {else
+    if ActualFileExt = '.IRRAD' then //in stacking - like delimited but differences
+      result:= ft_DelimitedText}
     else
       result := ft_Other
   else
@@ -144,6 +151,44 @@ begin
   if FileExt = 'WaterEffectTable'then  result:= ft_DelimitedText //
   else
   if FileExt = 'Weather' then result:= ft_DelimitedText //
+  else
+
+  {Stacking types}
+  if FileExt = 'AbilityResponseTable' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'BuffEffectsData' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'CameraSettings' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'DollTaskList' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'Outfit' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'RigidBodyEventData' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'StackGameGlobals' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LoadingScreenRules' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'BuffEffectTable' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'Buff' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'DollReactionAnims' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'PercentCompleteValues' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'TutorialCardSet' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'GameUnlocks' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'InstanceVertexData' then result:= ft_Other //
+  else
+  if FileExt = 'DollSoundTable' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'GibData' then result:= ft_DelimitedText //
+
+
   else
   begin
      result:= ft_Unknown;
