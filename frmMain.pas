@@ -24,12 +24,12 @@
 TODO
 IRON BRIGADE PATH AND TEST
 Costume quest support
-change busy animation
+Change busy animation - its the one from monkey island explorer.
 Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
-Audio controls arent centred
 Extra filetypes for iron brigade and costume quest - add
+Iron Brigade apparently not all sounds working in FSB
 
-Account for files with same name?
+When dumping check for files with same name? Are there files in bundles with duplicate names (and paths)?
 }
 unit frmMain;
 
@@ -61,9 +61,6 @@ type
     editFind: TJvEdit;
     panelPreviewContainer: TPanel;
     PanelPreviewAudio: TPanel;
-    btnPlay: TSpeedButton;
-    btnPause: TSpeedButton;
-    btnStop: TSpeedButton;
     lblTime: TLabel;
     TrackBarAudio: TJvTracker;
     panelPreviewImage: TPanel;
@@ -104,6 +101,10 @@ type
     btnSendToHex: TAdvGlowButton;
     menuItemSaveAllVisibleRaw: TMenuItem;
     MenuItemOpenIronBrigade: TMenuItem;
+    panelAudioButtons: TPanel;
+    btnPlay: TSpeedButton;
+    btnPause: TSpeedButton;
+    btnStop: TSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -215,7 +216,7 @@ begin
   begin
     btnSendToHex.Visible := false;
     editFind.Left := 412;
-    editFind.Width := 303;
+    editFind.Width := 450;
   end;
 end;
 
@@ -235,10 +236,12 @@ begin
     try
       EnableDisableButtonsGlobal(false);
       memoLog.Clear;
+      imagePreview.Bitmap.Clear;
       Tree.Clear;
       fExplorer.OnDoneLoading:=OnDoneLoading;
       fExplorer.OnDebug:=OnDebug;
       Tree.Header.AutoFitColumns(true);
+      PanelBlank.BringToFront;
 
       fExplorer.Initialise;
       UpdateSaveAllMenu;
@@ -565,7 +568,7 @@ begin
     ft_DDSImage: ImageIndex:= 8;
     ft_Text:  ImageIndex:= 9;
     ft_DelimitedText:  ImageIndex:= 14;
-    //ft_Script:ImageIndex:= 9;
+    ft_Audio: ImageIndex:= 12;
     ft_Other: ImageIndex:= 5;
     ft_Unknown: ImageIndex:=5
   else
@@ -642,7 +645,7 @@ begin
         ft_DDSImage:   MyPopupItems[i].ImageIndex:=8;
         ft_Text:    MyPopupItems[i].ImageIndex:=9;
         ft_DelimitedText:    MyPopupItems[i].ImageIndex:=14;
-        //ft_Script:  MyPopupItems[i].ImageIndex:=9;
+        ft_Audio:  MyPopupItems[i].ImageIndex:=12;
         ft_Other:   MyPopupItems[i].ImageIndex:=5;
         ft_Unknown: MyPopupItems[i].ImageIndex:=5;
         else
@@ -903,7 +906,6 @@ end;
 procedure TformMain.menuItemSaveAllAudioClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
-  DecodeResult: boolean;
 begin
   if Tree.RootNodeCount=0 then exit;
   if dlgBrowseforSaveFolder.Execute = false then exit;
@@ -922,18 +924,8 @@ begin
         continue;
       end;
 
-      DecodeResult:=false;
       if fExplorer.FileType[TempNode.Index] = ft_Audio then
         fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), fExplorer.FileName[TempNode.Index]);
-      {if fExplorer.FileType[TempNode.Index] = ft_Audio then
-        DecodeResult:=fExplorer.SaveWavToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.wav'));
-
-      if DecodeResult = false then
-      begin
-        TempNode:=Tree.GetNext(TempNode);
-        Application.ProcessMessages;
-        continue;
-      end;}
 
       Application.ProcessMessages;
       TempNode:=Tree.GetNext(TempNode);

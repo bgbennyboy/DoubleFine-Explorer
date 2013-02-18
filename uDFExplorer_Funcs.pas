@@ -189,6 +189,14 @@ begin
   if FileExt = 'GibData' then result:= ft_DelimitedText //
 
 
+
+  {Audio}
+  else
+  if FileExt = '.MP3' then result:= ft_Audio //
+  else
+  if FileExt = '.WAV' then result:= ft_Audio //
+
+
   else
   begin
      result:= ft_Unknown;
@@ -259,6 +267,10 @@ begin
   except on EJCLRegistryError do
     result:='';
   end;
+
+  if DirectoryExists(result) = false then
+    if DirectoryExists('C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win\') then //Retail path? untested by me
+      result := 'C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win';
 end;
 
 function SanitiseFileName(FileName: string): string;

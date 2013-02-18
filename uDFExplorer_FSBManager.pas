@@ -267,8 +267,9 @@ const
 var
   TempStr: string;
   FileObject: TFSBFile;
-  NumSamples, SampleHeaderSize, Datasize, Version, HeadMode, NameOffset, 
+  NumSamples, SampleHeaderSize, Datasize, NameOffset,
     FileOffset, i, Size, Samples, PrevOffsetAndSize: integer;
+  Version, HeadMode: longword;
 begin
   fMemoryBundle.Position := 0;
   TempStr := fMemoryBundle.ReadBlockName;
@@ -292,15 +293,18 @@ begin
   
   if (HeadMode and $08) = 1 then
     Log('BIG ENDIAN MODE DETECTED: IMPLEMENT SUPPORT FOR THIS !!!!!');
-  
+
+  if(HeadMode and $00000002) <> 0 then
+    Log('Basic headers detected in this FSB!');
   
   for I := 0 to NumSamples - 1 do
   begin  
-    if (HeadMode and 2) and i = 1 then
+    if ((HeadMode and $00000002) <> 0) and (i <> 0) then
     begin
-      Log('Basic headers mode');
-      Size :=     fMemoryBundle.ReadDWord;
+      //Log('Basic headers mode');
       Samples :=  fMemoryBundle.ReadDWord;
+      Size :=     fMemoryBundle.ReadDWord;
+      TempStr := inttostr(i);
       //freq, chans, mode and moresize are the same as the first file
     end
     else
