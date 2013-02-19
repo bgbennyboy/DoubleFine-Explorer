@@ -52,6 +52,7 @@ type
     Size:     integer;
     FileTypeIndex: integer;
     CompressionType: integer;
+    Compressed: boolean;
     FileExtension: string;
     FileType: TFileType;
   end;

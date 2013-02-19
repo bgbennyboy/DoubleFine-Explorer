@@ -45,6 +45,8 @@ type
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     procedure Log(Text: string); override;
+    procedure ReadV2Bundle;
+    procedure ReadV5Bundle;
   public
     BundleFiles: TObjectList;
     constructor Create(ResourceFile: string); override;
@@ -198,83 +200,166 @@ end;
 
 procedure TPAKManager.ParseFiles;
 var
+  Version: integer;
+begin
+ if fBigEndian then //All LE reading auto converted to BE
+    Log('Detected as : big endian');
+
+
+  //Read header
+  fBundle.Position      := 4;
+  Version               := fBundle.ReadByte; //not dword
+
+  if Version = 2 then
+    ReadV2Bundle //Costume quest
+  else
+  if Version = 5 then
+    ReadV5Bundle
+  else
+  begin
+    Log('WARNING: Unknown DFPF version: ' + inttostr(Version));
+    if (Version > 5) and (Version <  10) then
+      ReadV5Bundle; //Give it a try - probably wont work but...
+  end;
+
+end;
+
+procedure TPAKManager.ReadV2Bundle;
+var
   FileObject: TDFFile;
 
-  Version,  NameDirSize, NumFiles: integer;
+  {NameDirSize} NumFiles: integer;
 
-  FileExtensionOffset, NameDirOffset, JunkDataOffset, FileRecordsOffset: uint64;
+  FileExtensionOffset, NameDirOffset, {JunkDataOffset,} FileRecordsOffset: uint64;
 
-  FileExtensionCount, Marker1, Marker2, FooterOffset1, FooterOffset2, Unknown,
-  BlankBytes1, BlankBytes2, BlankBytes3: integer;
+  {Marker1, Marker2, FooterOffset1, FooterOffset2, Unknown, BlankBytes1, BlankBytes2: integer;}
 
-  i, j, tempint: integer;
+  i, tempint, FileExtensionCount: integer;
 
   FileExtensions: TStringList;
-  strTemp: string;
 const
   sizeOfFileRecord: integer = 16;
 begin
-{old
-  //Read header
-  fBundle.Position := 4;
-  Unknown1          := fBundle.ReadDWord;
-  Unknown2          := fBundle.ReadDWord;
-  OtherDataOffset   := fBundle.ReadDWord;  //Or alignment?   table 1 - type table pointer
-  Unknown3          := fBundle.ReadDWord;
-  NameDirOffset     := fBundle.ReadDWord;                    //fn table pointer
-  Unknown4          := fBundle.ReadDWord;                    //number of types
-  NameDirSize       := fBundle.ReadDWord; //Wrong!           //size of fn table
-  numFiles          := fBundle.ReadDWord;                    //file count
-  Unknown5          := fBundle.ReadDWord;                    //MARKER 23A1CEABh
-  BlankBytes1       := fBundle.ReadDWord;
-  BlankBytes2       := fBundle.ReadDWord;
-  BlankBytes3       := fBundle.ReadDWord;
-  JunkDataOffset    := fBundle.ReadDWord;  //start of extra bytes in .~p file?    //16 blank bytes including this
-  Unknown6          := fBundle.ReadDWord;
-  FileRecordsOffset := fBundle.ReadDWord;                  //p table
-  Unknown7          := fBundle.ReadDWord;
-  Unknown8          := fBundle.ReadDWord;
-  Unknown9          := fBundle.ReadDWord;
-  Unknown10         := fBundle.ReadDWord;
-  Unknown11         := fBundle.ReadDWord;
-  Unknown12         := fBundle.ReadDWord;                    //marker again  23A1CEABh
+  fBundle.Position      := 8;
 
-  Log(' Unknown1 ' + inttostr(Unknown1 ) );
-  Log(' Unknown2 ' + inttostr( Unknown2) );
-  Log(' OtherDataOffset ' + inttostr( OtherDataOffset) );
-  Log(' Unknown3 ' + inttostr( Unknown3) );
-  Log(' NameDirOffset ' + inttostr(NameDirOffset ) );
-  Log(' Unknown4 ' + inttostr( Unknown4) );
-  Log(' NameDirSize ' + inttostr(NameDirSize ) );
-  Log(' numFiles ' + inttostr(numFiles ) );
-  Log(' Unknown5 ' + inttostr(Unknown5 ) );
-  Log(' BlankBytes1 ' + inttostr(BlankBytes1 ) );
-  Log(' BlankBytes2 ' + inttostr(BlankBytes2 ) );
-  Log(' BlankBytes3 ' + inttostr(BlankBytes3 ) );
-  Log(' Junk data offset ' + inttostr(JunkDataOffset ) );
-  Log(' Unknown6 ' + inttostr( Unknown6) );
-  Log(' FileRecordsOffset ' + inttostr(FileRecordsOffset ) );
-  Log(' Unknown7 ' + inttostr(Unknown7 ) );
-  Log(' Unknown8 ' + inttostr(Unknown8 ) );
-  Log(' Unknown9 ' + inttostr( Unknown9) );
-  Log(' Unknown10 ' + inttostr(Unknown10 ) );
-  Log(' Unknown11 ' + inttostr( Unknown11) );
-  Log(' Unknown12 ' + inttostr( Unknown12) );
+  FileExtensionOffset   := fBundle.ReadQWord;  //Or alignment?   table 1 - type table pointer
+  NameDirOffset         := fBundle.ReadQWord;                    //fn table pointer
+  FileExtensionCount    := fBundle.ReadDWord;                    //number of types
+  fBundle.Seek(4 , sofromcurrent);        //NameDirSize           := fBundle.ReadDWord; //Wrong!           //size of fn table
+  numFiles              := fBundle.ReadDWord;                    //file count
+  fBundle.Seek(4 , sofromcurrent);        //Marker1               := fBundle.ReadDWordLe;                  //MARKER 23A1CEABh
+  fBundle.Seek(4 , sofromcurrent);        //BlankBytes1           := fBundle.ReadDWord;
+  fBundle.Seek(4 , sofromcurrent);        //BlankBytes2           := fBundle.ReadDWord;
+  fBundle.Seek(8 , sofromcurrent);        //JunkDataOffset        := fBundle.ReadQWord;  //start of extra bytes in .~p file?
+  FileRecordsOffset     := fBundle.ReadQWord;                  //p table
+  fBundle.Seek(8 , sofromcurrent);        //FooterOffset1         := fBundle.ReadQWord;
+  fBundle.Seek(8 , sofromcurrent);        //FooterOffset2         := fBundle.ReadQWord;
+  fBundle.Seek(4 , sofromcurrent);        //Unknown               := fBundle.ReadDWord;
+  fBundle.Seek(4 , sofromcurrent);        //Marker2               := fBundle.ReadDWordLe;                    //marker again  23A1CEABh
 
-  //info size = numfiles shl 4
-}
-{
-dfpf 4
-get DUMMY long
-get DUMMY long
-get DUMMY long  # align?  offset to some data
-get DUMMY long
-get NAME_OFF long
-get DUMMY long
-get DUMMY long   is the size in bytes of the NAME_OFF data
-get FILES long
-the INFO_OFF value is at offset 0x3C   60
-}
+
+
+  //Parse files
+  for I := 0 to numFiles - 1 do   //16 bytes
+  begin
+    fBundle.Position  := FileRecordsOffset + (sizeOfFileRecord * i);
+    FileObject        := TDFFile.Create;
+
+    fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
+    FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 9) ;
+    FileObject.Size                 := (fBundle.ReadDWord shl 1) shr 10; //Size in the p file
+    fBundle.Seek(-1, soFromCurrent);
+    FileObject.Offset               := (fBundle.ReadDWord shl 7) shr 2;
+    fBundle.Seek(1, soFromCurrent);
+    FileObject.NameOffset           := (fBundle.ReadDWord) shr 11;
+    fBundle.Seek(-2, soFromCurrent);
+    FileObject.FileTypeIndex        := (fBundle.ReadDWord shl 5) shr 25;
+    fBundle.Seek(-3, soFromCurrent);
+    FileObject.CompressionType      := fBundle.ReadByte and 15;
+
+    case FileObject.CompressionType of
+      2: FileObject.Compressed := false;
+      4: FileObject.Compressed := true;
+    else Log('Unknown compression type! ' + inttostr(FileObject.CompressionType));
+    end;
+
+    //In costume quest sizes are messed up - when compressed they are fine - but when not the size value is nonsense
+    {if FileObject.Compressed = false then
+      FileObject.Size := FileObject.UncompressedSize;}
+
+
+
+
+    //Get filename from filenames table
+    fBundle.Position    := NameDirOffset + FileObject.NameOffset;
+    FileObject.FileName := PChar(fBundle.ReadString(255));
+
+
+    BundleFiles.Add(FileObject);
+
+    {Log('');
+    Log(inttostr(i+1));
+    Log(FileObject.FileName);
+    Log('Size when decompressed ' + inttostr(FileObject.UnCompressedSize));
+    Log('Name offset ' + inttostr(FileObject.NameOffset));
+    Log('Size ' + inttostr(FileObject.Size));
+    Log('Offset ' + inttostr(FileObject.Offset));
+    Log('Filetype index ' + inttostr(FileObject.FileTypeIndex));
+    Log('Comp type ' + inttostr(FileObject.CompressionType));}
+  end;
+
+
+  //Parse the 'other data' File Extension table
+  FileExtensions := TStringList.Create;
+  try
+    fBundle.Position := FileExtensionOffset;
+    for I := 0 to FileExtensionCount - 1 do
+    begin
+      TempInt := fBundle.ReadDWord;
+      FileExtensions.Add(Trim(fBundle.ReadString( TempInt)));
+      fBundle.Seek(12, soFromCurrent); //12 unknown bytes
+      //Log(FileExtensions[i]);
+    end;
+
+
+    //Match filetype index and populate FileType
+    for I := 0 to BundleFiles.Count -1 do
+    begin
+       //Add file extension
+       TDFFile(BundleFiles[i]).FileExtension := Trim(FileExtensions[TDFFile(BundleFiles[i]).FileTypeIndex]);
+
+       //Add file type
+       TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension( TDFFile(BundleFiles[i]).FileExtension, Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
+       if TDFFile(BundleFiles[i]).FileType = ft_Unknown then Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
+
+    end;
+
+  finally
+    FileExtensions.Free;
+  end;
+
+  if (Assigned(FOnDoneLoading)) then
+	  FOnDoneLoading(numFiles);
+
+
+end;
+
+procedure TPAKManager.ReadV5Bundle;
+var
+  FileObject: TDFFile;
+
+  {NameDirSize} NumFiles: integer;
+
+  FileExtensionOffset, NameDirOffset, {JunkDataOffset,} FileRecordsOffset: uint64;
+
+  {Marker1, Marker2, FooterOffset1, FooterOffset2, Unknown, BlankBytes1, BlankBytes2: integer;}
+
+  i, tempint, FileExtensionCount: integer;
+
+  FileExtensions: TStringList;
+const
+  sizeOfFileRecord: integer = 16;
+begin
 {
 Think this is the structure
   Header
@@ -291,33 +376,23 @@ Think this is the structure
 }
 
 
-
- if fBigEndian then //All LE reading auto converted to BE
-    Log('Detected as : big endian');
-
-
   //Read header
-  fBundle.Position      := 4;
-  Version               := fBundle.ReadByte; //not dword man_trivial on the cave has other stuff after byte 1
-  fBundle.Seek(3, soFromCurrent);
-
-  if Version <> 5 then //Check version and warn if unknown
-    Log('WARNING: Unknown DFPF version: ' + inttostr(Version));
+  fBundle.Position      := 8;
 
   FileExtensionOffset   := fBundle.ReadQWord;  //Or alignment?   table 1 - type table pointer
   NameDirOffset         := fBundle.ReadQWord;                    //fn table pointer
   FileExtensionCount    := fBundle.ReadDWord;                    //number of types
-  NameDirSize           := fBundle.ReadDWord; //Wrong!           //size of fn table
+  fBundle.Seek(4 , sofromcurrent);        //NameDirSize           := fBundle.ReadDWord; //Wrong!           //size of fn table
   numFiles              := fBundle.ReadDWord;                    //file count
-  Marker1               := fBundle.ReadDWordLe;                  //MARKER 23A1CEABh
-  BlankBytes1           := fBundle.ReadDWord;
-  BlankBytes2           := fBundle.ReadDWord;
-  JunkDataOffset        := fBundle.ReadQWord;  //start of extra bytes in .~p file?
+  fBundle.Seek(4 , sofromcurrent);        //Marker1               := fBundle.ReadDWordLe;                  //MARKER 23A1CEABh
+  fBundle.Seek(4 , sofromcurrent);        //BlankBytes1           := fBundle.ReadDWord;
+  fBundle.Seek(4 , sofromcurrent);        //BlankBytes2           := fBundle.ReadDWord;
+  fBundle.Seek(8 , sofromcurrent);        //JunkDataOffset        := fBundle.ReadQWord;  //start of extra bytes in .~p file?
   FileRecordsOffset     := fBundle.ReadQWord;                  //p table
-  FooterOffset1         := fBundle.ReadQWord;
-  FooterOffset2         := fBundle.ReadQWord;
-  Unknown               := fBundle.ReadDWord;
-  Marker2               := fBundle.ReadDWordLe;                    //marker again  23A1CEABh
+  fBundle.Seek(8 , sofromcurrent);        //FooterOffset1         := fBundle.ReadQWord;
+  fBundle.Seek(8 , sofromcurrent);        //FooterOffset2         := fBundle.ReadQWord;
+  fBundle.Seek(4 , sofromcurrent);        //Unknown               := fBundle.ReadDWord;
+  fBundle.Seek(4 , sofromcurrent);        //Marker2               := fBundle.ReadDWordLe;                    //marker again  23A1CEABh
 
   {Log(' Version '             + inttostr(Version ) );
   Log(' FileExtensionOffset ' + inttostr( FileExtensionOffset) );
@@ -353,11 +428,15 @@ Think this is the structure
     FileObject.Size                 := (fBundle.ReadDWord shl 5) shr 9; //Size in the p file
     fBundle.Seek(-1, soFromCurrent);
     FileObject.FileTypeIndex        := (fBundle.ReadDWord shl 4) shr 24;
-    if Version = 5 then
       FileObject.FileTypeIndex      := FileObject.FileTypeIndex shr 1; //normalise it
     fBundle.Seek(-3, soFromCurrent);
-    FileObject.CompressionType      := fBundle.ReadByte {and 15}; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compessed vs decompressed sizes when dumping.
+    FileObject.CompressionType      := fBundle.ReadByte and 15; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compessed vs decompressed sizes when dumping.
 
+    case FileObject.CompressionType of
+      4: FileObject.Compressed := false;
+      8: FileObject.Compressed := true;
+    else Log('Unknown compression type! ' + inttostr(FileObject.CompressionType));
+    end;
 
     //Get filename from filenames table
     fBundle.Position    := NameDirOffset + FileObject.NameOffset;
@@ -371,7 +450,7 @@ Think this is the structure
     Log(FileObject.FileName);
     Log('Size when decompressed ' + inttostr(FileObject.UnCompressedSize));
     Log('Name offset ' + inttostr(FileObject.NameOffset));
-    Log('Uncomp Size ' + inttostr(FileObject.UncompressedSize));
+    Log('Size ' + inttostr(FileObject.Size));
     Log('Offset ' + inttostr(FileObject.Offset));
     Log('Filetype index ' + inttostr(FileObject.FileTypeIndex));
     Log('Comp type ' + inttostr(FileObject.CompressionType));}
@@ -383,7 +462,7 @@ Think this is the structure
   try
     fBundle.Position := FileExtensionOffset;
     for I := 0 to FileExtensionCount - 1 do
-    begin                                    
+    begin
       TempInt := fBundle.ReadDWord;
       FileExtensions.Add(Trim(fBundle.ReadString( TempInt)));
       fBundle.Seek(12, soFromCurrent); //12 unknown bytes
@@ -465,7 +544,6 @@ procedure TPAKManager.SaveFileToStream(FileNo: integer; DestStream: TStream);
 var
   Ext: string;
   TempStream: TMemoryStream;
-  //Temp: word;
 begin
   if TDFFile(BundleFiles.Items[FileNo]).Size <= 0 then
   begin
@@ -483,10 +561,8 @@ begin
 
   fDataBundle.Seek(TDFFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
 
-  //Temp := fDataBundle.ReadWord;
-  //fDataBundle.Seek(-2, soFromCurrent);
-  //if Temp = 30938 {78DA Big Endian} then
-  if TDFFile(BundleFiles.Items[FileNo]).UncompressedSize <> TDFFile(BundleFiles.Items[FileNo]).Size then  //compressed TODO check with compressed field once I see files compressed with something other than zlib
+  //if TDFFile(BundleFiles.Items[FileNo]).UncompressedSize <> TDFFile(BundleFiles.Items[FileNo]).Size then
+  if TDFFile(BundleFiles.Items[FileNo]).Compressed then
   begin
     TempStream := tmemorystream.Create;
     try
@@ -494,7 +570,6 @@ begin
       //tempstream.SaveToFile('c:\users\ben\desktop\testfile');
       Tempstream.Position := 0;
       DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize, DestStream);
-      //Log('Decompressed');
     finally
       TempStream.Free;
     end
