@@ -266,10 +266,11 @@ begin
     FileObject        := TDFFile.Create;
 
     fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
-    FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 9) ;
+    FileObject.UnCompressedSize     := (fBundle.ReadDWord shr 9) ;
+    fBundle.Seek(1, soFromCurrent);
     FileObject.Size                 := (fBundle.ReadDWord shl 1) shr 10; //Size in the p file
-    fBundle.Seek(-1, soFromCurrent);
-    FileObject.Offset               := (fBundle.ReadDWord shl 7) shr 2;
+    fBundle.Seek(-2, soFromCurrent);
+    FileObject.Offset               := (fBundle.ReadDWord shl 7) shr 2; //BROKEN in man_trivial
     fBundle.Seek(1, soFromCurrent);
     FileObject.NameOffset           := (fBundle.ReadDWord) shr 11;
     fBundle.Seek(-2, soFromCurrent);
@@ -282,12 +283,6 @@ begin
       4: FileObject.Compressed := true;
     else Log('Unknown compression type! ' + inttostr(FileObject.CompressionType));
     end;
-
-    //In costume quest sizes are messed up - when compressed they are fine - but when not the size value is nonsense
-    {if FileObject.Compressed = false then
-      FileObject.Size := FileObject.UncompressedSize;}
-
-
 
 
     //Get filename from filenames table
