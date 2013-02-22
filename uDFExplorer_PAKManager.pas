@@ -270,8 +270,8 @@ begin
     fBundle.Seek(1, soFromCurrent);
     FileObject.Size                 := (fBundle.ReadDWord shl 1) shr 10; //Size in the p file
     fBundle.Seek(-2, soFromCurrent);
-    FileObject.Offset               := (fBundle.ReadDWord shl 7) shr 2; //BROKEN in man_trivial
-    fBundle.Seek(1, soFromCurrent);
+    FileObject.Offset               := (fBundle.ReadQWord shl 7) shr 34; //read 8 bytes not 4 because we need 30 bits starting at byte 7, bit 7 - so doing shl 7 means we only get 25 bits remaining out of a dword
+    fBundle.Seek(-3, soFromCurrent);
     FileObject.NameOffset           := (fBundle.ReadDWord) shr 11;
     fBundle.Seek(-2, soFromCurrent);
     FileObject.FileTypeIndex        := (fBundle.ReadDWord shl 5) shr 25;
