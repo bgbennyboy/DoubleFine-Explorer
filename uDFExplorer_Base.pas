@@ -60,6 +60,7 @@ public
   procedure SaveFiles(DestDir: string);
   procedure SaveFileToStream(FileNo: integer; DestStream: TStream);
   procedure ReadText(FileIndex: integer; DestStrings: TStrings);
+  procedure ReadCSVText(FileIndex: integer; DestStrings: TStrings);
   procedure ReadDelimitedText(FileIndex: integer; DestStrings: TStrings);
   property OnDebug: TDebugEvent read FOnDebug write FOnDebug;
   property OnDoneLoading: TOnDoneLoading read FOnDoneLoading write FOnDoneLoading;
@@ -90,31 +91,40 @@ begin
 
 end;
 
+destructor TDFExplorerBase.Destroy;
+begin
+  if fBundle <> nil then
+    FreeandNil(fBundle);
+
+  inherited;
+end;
+
 //Deal with delimited text and format it nicely
 procedure TDFExplorerBase.ReadDelimitedText(FileIndex: integer;
   DestStrings: TStrings);
 
-function GetIndent(IndentLevel: integer): string;
-var
-  i: integer;
-begin
-  result :='';
-  for i := 0 to IndentLevel - 1 do
-    result := result + '    ';//chr(9); //tab
-end;
+  function GetIndent(IndentLevel: integer): String; inline;
+  var
+    i: integer;
+  begin
+    result :='';
+    for i := 0 to IndentLevel - 1 do
+      result := result + '    ';//chr(9); //tab
+  end;
 
 var
   TempStream: TExplorerMemoryStream;
   TextLen, i, IndentLevel, SquareBracketLevel: integer;
-  SourceStr, TempStr: string;
+  TempStr: String;
+  SourceStr: AnsiString;
 begin
   TempStream:=TExplorerMemoryStream.Create;
-  DestStrings.BeginUpdate;                        //REMOVE THE 1
+  DestStrings.BeginUpdate;
   try
     fBundle.SaveFileToStream(Fileindex, TempStream);
     TextLen := TempStream.ReadDWord;
     Sourcestr :='';
-    SourceStr := TempStream.ReadString(TextLen);
+    SourceStr := TempStream.ReadAnsiString(TextLen);
 
     IndentLevel := 0;
     SquareBracketLevel := 0;
@@ -190,6 +200,7 @@ begin
       else
       if SourceStr[i] = #0 then
         //ignore newline char
+        continue
       else
       if (SquareBracketLevel > 0) and (SourceStr[i] = ',')  then
       begin
@@ -202,7 +213,7 @@ begin
         //Swallow the comma so its a newline
       end
       else
-        Tempstr := TempStr + SourceStr[i];
+        Tempstr := TempStr + String(SourceStr[i]);
 
     end;
 
@@ -212,12 +223,33 @@ begin
   end;
 end;
 
-destructor TDFExplorerBase.Destroy;
+procedure TDFExplorerBase.ReadText(FileIndex: integer; DestStrings: TStrings);
+var
+  TempStream: TExplorerMemoryStream;
 begin
-  if fBundle <> nil then
-    FreeandNil(fBundle);
+  TempStream:=TExplorerMemoryStream.Create;
+  try
+    fBundle.SaveFileToStream(Fileindex, TempStream);
+    DestStrings.LoadFromStream(TempStream);
+  finally
+    TempStream.Free;
+  end;
+end;
 
-  inherited;
+procedure TDFExplorerBase.ReadCSVText(FileIndex: integer;
+  DestStrings: TStrings);
+var
+  TempStream: TExplorerMemoryStream;
+begin
+  TempStream:=TExplorerMemoryStream.Create;
+  try
+    fBundle.SaveFileToStream(Fileindex, TempStream);
+    DestStrings.LoadFromStream(TempStream);
+    DestStrings.CommaText := DestStrings.Text; //Probably very slow but...
+  finally
+    TempStream.Free;
+  end;
+
 end;
 
 function TDFExplorerBase.DrawImage(MemStream: TMemoryStream;
@@ -365,18 +397,7 @@ begin
   if assigned(fOnDebug) then fOnDebug(Text);
 end;
 
-procedure TDFExplorerBase.ReadText(FileIndex: integer; DestStrings: TStrings);
-var
-  TempStream: TExplorerMemoryStream;
-begin
-  TempStream:=TExplorerMemoryStream.Create;
-  try
-    fBundle.SaveFileToStream(Fileindex, TempStream);
-    DestStrings.LoadFromStream(TempStream);
-  finally
-    TempStream.Free;
-  end;
-end;
+
 
 function TDFExplorerBase.SaveDDSToFile(FileIndex: integer; DestDir,
   FileName: string): boolean;

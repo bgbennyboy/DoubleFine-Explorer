@@ -38,6 +38,7 @@ type
     ft_GenericImage,
     ft_DDSImage,
     ft_Text,
+    ft_CSVText,
     ft_DelimitedText,
     ft_Other,
     ft_Audio,

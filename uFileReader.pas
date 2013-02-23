@@ -47,8 +47,8 @@ type
     function ReadTriByte: longword; inline;
     function ReadTriByteBE: longword; inline;
     function ReadBlockName: string; inline;
-    function ReadString(Length: integer): string;
-    function ReadStringAlt(Length: integer): string;
+    function ReadString(Length: integer): string; inline;
+    function ReadStringAlt(Length: integer): string; inline;
     constructor Create(FileName: string);
     destructor Destroy; override;
     property BigEndian: boolean read fBigEndian write setBigEndian;

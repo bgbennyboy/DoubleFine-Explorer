@@ -62,6 +62,9 @@ begin
     else
     if ActualFileExt = '.PNG' then
       result:= ft_GenericImage //in stacking
+    else
+    if ActualFileExt = '.CSV' then
+      result:= ft_CSVText //in Costume Quest
     {else
     if ActualFileExt = '.IRRAD' then //in stacking - like delimited but differences
       result:= ft_DelimitedText}
@@ -187,7 +190,88 @@ begin
   if FileExt = 'DollSoundTable' then result:= ft_DelimitedText //
   else
   if FileExt = 'GibData' then result:= ft_DelimitedText //
+  else
 
+  {Costume Quest types}
+  if FileExt = 'DialogReactionSets' then result:= ft_Other //
+  else
+  if FileExt = 'InventoryItemResource' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'QuestObjective' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'CharacterNames' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'CameraOperatorData' then result:= ft_DelimitedText //
+  else
+
+  {Iron Brigade types}
+  if FileExt = 'ComboAnim' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'ComboPose' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'AmbMeshDefinition' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'OceanData' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'MechItem' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LobbyRulesAttributes' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'DLCLobbyAttributes' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LootTable' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'SpawnManagerAttributes' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'ShiftStory' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'SpawnEvent' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LootLookup' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'VidSubtitles' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'RndTileData' then result:= ft_Other //
+  else
+  if FileExt = 'QuadTileData' then result:= ft_Other //
+  else
+  if FileExt = 'AmbTileData' then result:= ft_Other //
+  else
+  if FileExt = 'Chatter' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'AchievementRequirementData' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'DamageResponseTable' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'WarChest' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'Experience' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'GameSettings' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'AmbientVignettes' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LevelList' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LootTableInfo' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'LoadingBackgroundSets' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'Loadout' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'DriverOutfit' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'RegimentChallengeTab' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'PilotList' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'RichPresenceInfo' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'MissionData' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'CommonLineCodes' then result:= ft_DelimitedText //
+  else
+  if FileExt = 'NavigationSystemGraph' then result:= ft_Other//
 
 
   {Audio}

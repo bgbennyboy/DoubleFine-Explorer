@@ -18,9 +18,9 @@ type
     function ReadDWord: longword;
     function ReadBlockName: string;
     function ReadBuffer(var Buffer; Count: longint): longint;
-    function ReadString(Length: integer): string;
-    function ReadStringAlt(Length: integer): string;
-    function ReadNullTerminatedString: string;
+    function ReadString(Length: integer): string; inline;
+    function ReadAnsiString(Length: integer): ansistring; inline;
+    function ReadStringAlt(Length: integer): string; inline;
     constructor Create;
     destructor Destroy; override;
 
@@ -44,7 +44,6 @@ begin
 end;
 
 
-
 function TExplorerMemoryStream.ReadBlockName: string;
 begin
    result:=chr(ReadByte)+chr(ReadByte)+chr(ReadByte)+chr(ReadByte);
@@ -66,8 +65,15 @@ begin
   end;
 end;
 
-function TExplorerMemoryStream.ReadNullTerminatedString: string;
+function TExplorerMemoryStream.ReadAnsiString(Length: integer): ansistring;
+var
+  n: longword;
 begin
+  SetLength(result,length);
+  for n:=1 to length do
+  begin
+    result[n]:=Ansichar(Chr(ReadByte));
+  end;
 
 end;
 

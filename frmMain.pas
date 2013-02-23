@@ -22,12 +22,11 @@
 }
 {
 TODO
-IRON BRIGADE PATH AND TEST
-Costume quest support
 Change busy animation - its the one from monkey island explorer.
 Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
-Extra filetypes for iron brigade and costume quest - add
 Iron Brigade apparently not all sounds working in FSB
+Filter by actual file extension no
+Save single image as png not dds
 
 When dumping check for files with same name? Are there files in bundles with duplicate names (and paths)?
 }
@@ -431,7 +430,7 @@ begin
     ext:=Uppercase(extractfileext(fExplorer.FileName[Tree.focusednode.Index]));
     menuItemDumpImage.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage;
     menuItemDumpDDSImage.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage;
-    menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText);
+    menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText);
     menuItemDumpAudio.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_Audio;
   end;
 end;
@@ -470,7 +469,7 @@ begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
     end;
-    if (fExplorer.FileType[i]  = ft_Text) or (fExplorer.FileType[i]  = ft_DelimitedText) then
+    if (fExplorer.FileType[i]  = ft_Text) or (fExplorer.FileType[i]  = ft_DelimitedText) or (fExplorer.FileType[i]  = ft_CSVText) then
       menuItemSaveAllText.Visible:=true;
     if fExplorer.FileType[i]  = ft_Audio then
       menuItemSaveAllAudio.Visible:=true;
@@ -489,6 +488,7 @@ end;
 procedure TformMain.TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 var
   ext: string;
+  TempStrings: TStringList;
 begin
   EnableDisableButtons_TreeDependant;
 
@@ -517,11 +517,26 @@ begin
     fExplorer.ReadText(Tree.focusednode.Index, memoPreview.Lines);
   end;
 
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_CSVText then
+  begin
+    panelPreviewText.BringToFront;
+    memoPreview.Clear;
+    fExplorer.ReadCSVText(Tree.focusednode.Index, memoPreview.Lines);
+  end;
+
   if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_DelimitedText) then
   begin
     panelPreviewText.BringToFront;
     memoPreview.Clear;
-    fExplorer.ReadDelimitedText(Tree.focusednode.Index, memoPreview.Lines);
+
+    TempStrings := TStringList.Create;
+    try
+      fExplorer.ReadDelimitedText(Tree.focusednode.Index, TempStrings);
+      memoPreview.Text := TempStrings.Text; //This is much faster than assign
+    finally
+      TempStrings.Free;
+    end;
+
   end;
 
   //DDS Images
@@ -568,6 +583,7 @@ begin
     ft_DDSImage: ImageIndex:= 8;
     ft_Text:  ImageIndex:= 9;
     ft_DelimitedText:  ImageIndex:= 14;
+    ft_CSVText:  ImageIndex:= 14;
     ft_Audio: ImageIndex:= 12;
     ft_Other: ImageIndex:= 5;
     ft_Unknown: ImageIndex:=5
@@ -644,6 +660,7 @@ begin
         ft_GenericImage:   MyPopupItems[i].ImageIndex:=8;
         ft_DDSImage:   MyPopupItems[i].ImageIndex:=8;
         ft_Text:    MyPopupItems[i].ImageIndex:=9;
+        ft_CSVText:    MyPopupItems[i].ImageIndex:=14;
         ft_DelimitedText:    MyPopupItems[i].ImageIndex:=14;
         ft_Audio:  MyPopupItems[i].ImageIndex:=12;
         ft_Other:   MyPopupItems[i].ImageIndex:=5;
@@ -856,6 +873,9 @@ begin
 
     if fExplorer.FileType[Tree.FocusedNode.Index] = ft_Text then
       fExplorer.ReadText(Tree.focusednode.Index, TempStrings)
+    else
+    if fExplorer.FileType[Tree.FocusedNode.Index] = ft_CSVText then
+      fExplorer.ReadCSVText(Tree.focusednode.Index, TempStrings)
     else
     if fExplorer.FileType[Tree.FocusedNode.Index] = ft_DelimitedText then
       fExplorer.ReadDelimitedText(Tree.FocusedNode.Index, TempStrings);
@@ -1088,6 +1108,9 @@ begin
       if fExplorer.FileType[TempNode.Index] = ft_Text then
         fExplorer.ReadText(TempNode.Index, TempStrings)
       else
+      if fExplorer.FileType[TempNode.Index] = ft_CSVText then
+        fExplorer.ReadCSVText(TempNode.Index, TempStrings)
+      else
       if fExplorer.FileType[TempNode.Index] = ft_DelimitedText then
         fExplorer.ReadDelimitedText(TempNode.Index, TempStrings);
 
@@ -1233,11 +1256,11 @@ begin
   EnableDisableButtonsGlobal(false);
   try
     try
-      fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index]));
-      ShellExec(0, 'open', fHexEditorPath, '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index]) +'"', ExtractFilePath(fHexEditorPath), SW_SHOWNORMAL);
+      fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
+      ShellExec(0, 'open', fHexEditorPath, '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(fHexEditorPath), SW_SHOWNORMAL);
     except on E: EFCreateError do
     begin //get new name if its already there and open
-      NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index]), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
+      NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
       DoLog(strErrHexFileExists + NewName);
       fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName));
       ShellExec(0, 'open', fHexEditorPath, '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(fHexEditorPath), SW_SHOWNORMAL);
@@ -1251,7 +1274,7 @@ begin
     if NewName <> '' then
       fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(NewName))
     else
-      fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(fExplorer.FileName[Tree.focusednode.Index]));
+      fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
   finally
     EnableDisableButtonsGlobal(true);
   end;
@@ -1288,7 +1311,6 @@ end;
 
 procedure TformMain.btnPlayClick(Sender: TObject);
 var
-  DecodeResult: boolean;
   strSecs: string;
   ByteLength: QWord;
   SecsLength: Double;
@@ -1309,8 +1331,6 @@ begin
 
   fAudioStream := TMemoryStream.Create;
   try
-    DecodeResult:=false;
-
     if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then //ext = strWAVExt then
       fExplorer.SaveFileToStream(Tree.focusednode.Index, fAudioStream); //.SaveWavToStream(Tree.focusednode.Index, fAudioStream);
 
