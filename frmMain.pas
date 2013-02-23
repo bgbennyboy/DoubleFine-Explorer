@@ -22,13 +22,10 @@
 }
 {
 TODO
-Change busy animation - its the one from monkey island explorer.
 Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
 Iron Brigade apparently not all sounds working in FSB
 Filter by actual file extension no
-Save single image as png not dds
 
-When dumping check for files with same name? Are there files in bundles with duplicate names (and paths)?
 }
 unit frmMain;
 
@@ -428,7 +425,7 @@ begin
   if NodeIsSelected then
   begin
     ext:=Uppercase(extractfileext(fExplorer.FileName[Tree.focusednode.Index]));
-    menuItemDumpImage.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage;
+    menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage);
     menuItemDumpDDSImage.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage;
     menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText);
     menuItemDumpAudio.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_Audio;
@@ -990,6 +987,7 @@ begin
 
       if DecodeResult = false then
       begin
+        DoLog('Error dumping image ' + fExplorer.FileName[TempNode.Index]);
         TempNode:=Tree.GetNext(TempNode);
         Application.ProcessMessages;
         continue;
@@ -1050,6 +1048,7 @@ begin
 
       if DecodeResult = false then
       begin
+        DoLog('Error dumping image ' + fExplorer.FileName[TempNode.Index]);
         TempNode:=Tree.GetNext(TempNode);
         continue;
       end;

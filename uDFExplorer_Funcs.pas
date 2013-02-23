@@ -363,7 +363,13 @@ var
 begin
   DelimiterPos := LastDelimiter('/', FileName );
   if DelimiterPos = 0 then
-    result := FileName
+  begin
+    DelimiterPos := LastDelimiter('\', FileName ); //Iron Brigade uses backslash
+    if DelimiterPos = 0 then
+      result := FileName
+    else
+      Result := Copy( FileName, DelimiterPos + 1, Length(FileName) - DelimiterPos + 1);
+  end
   else
     Result := Copy( FileName, DelimiterPos + 1, Length(FileName) - DelimiterPos + 1);
 end;
@@ -374,7 +380,16 @@ var
 begin
   DelimiterPos := LastDelimiter('/', FileName );
   if DelimiterPos = 0 then
-    result := ''
+  begin
+    DelimiterPos := LastDelimiter('\', FileName ); //Iron Brigade uses backslash
+    if DelimiterPos = 0 then
+      result := ''
+    else
+    begin
+      Result := Copy( FileName, 1,  DelimiterPos);
+      Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
+    end;
+  end
   else
   begin
     Result := Copy( FileName, 1,  DelimiterPos);

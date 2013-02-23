@@ -48,7 +48,7 @@ private
   function GetFileExtension(Index: integer): string;
   function DrawImage(MemStream: TMemoryStream; OutImage: TBitmap32): boolean;
   procedure Log(Text: string);
-  procedure WriteDDSToStream(SourceStream, DestStream: TStream);
+  function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
   destructor Destroy; override;
@@ -307,16 +307,18 @@ begin
   end;
 end;
 
-procedure TDFExplorerBase.WriteDDSToStream(SourceStream, DestStream: TStream);
+function TDFExplorerBase.WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
 var
   DDSnum: dword;  //542327876 = 'DDS '
 begin
+  result := false;
   SourceStream.Position := 40;
   SourceStream.Read(DDSnum, 4);
   if DDSnum = 542327876 then
   begin
     SourceStream.Seek(-4, soFromCurrent);
     DestStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
+    result := true;
   end
   else
   begin
@@ -326,9 +328,21 @@ begin
     begin
       SourceStream.Seek(-4, soFromCurrent);
       DestStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
+      result := true;
     end
     else
+    begin
+      SourceStream.Position := 180;
+      SourceStream.Read(DDSnum, 4);
+      if DDSnum = 542327876 then
+      begin
+        SourceStream.Seek(-4, soFromCurrent);
+        DestStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
+        result := true;
+      end
+      else
         Log('DDS decode failed! Couldnt find identifier!');
+    end;
   end;
 
   //DestStream.SaveToFile('C:\Users\Ben\Desktop\test.dds');
@@ -421,8 +435,7 @@ begin
 
     SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
     try
-      WriteDDSToStream(Tempstream, SaveFile);
-      Result:=true;
+      Result := WriteDDSToStream(Tempstream, SaveFile);
     finally
       SaveFile.Free;
     end;
