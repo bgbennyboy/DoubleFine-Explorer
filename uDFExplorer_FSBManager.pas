@@ -28,7 +28,7 @@ interface
 uses
   classes, sysutils, Contnrs, forms,
   uFileReader, uMemReader, uDFExplorer_BaseBundleManager, uDFExplorer_Types, uDFExplorer_Funcs,
-  JCLSysInfo, JCLShell, Windows;
+  uWaveWriter, JCLSysInfo, JCLShell, Windows;
 
 type
   TFSBManager = class (TBundleManager)
@@ -262,14 +262,21 @@ end;
 
 
 procedure TFSBManager.ParseFSB4;
+//Based on FSBExt by Luigi Auriemma
 const
   FSB_FileNameLength: integer = 30;
+  FSOUND_DELTA = $00000200;
+  FSOUND_8BITS = $00000008;
+  FSOUND_16BITS = $00000010;
+  FSOUND_MONO = $00000020;
+  FSOUND_STEREO = $00000040;
 var
-  TempStr: string;
+  TempStr, FileExt: string;
   FileObject: TFSBFile;
-  NumSamples, SampleHeaderSize, Datasize, NameOffset,
-    FileOffset, i, Size, Samples, PrevOffsetAndSize: integer;
+  RecordSize, NumSamples, Mode, SampleHeaderSize, Datasize, NameOffset,
+    FileOffset, i, Size, Samples, PrevOffsetAndSize, Channels, Bits, Frequency: integer;
   Version, HeadMode: longword;
+  Codec: TFSBCodec;
 begin
   fMemoryBundle.Position := 0;
   TempStr := fMemoryBundle.ReadBlockName;
@@ -291,7 +298,7 @@ begin
   FileOffset := 48 + SampleHeaderSize;
   PrevOffsetAndSize := 0;
   
-  if (HeadMode and $08) = 1 then
+  if (HeadMode and $08) <> 0 then
     Log('BIG ENDIAN MODE DETECTED: IMPLEMENT SUPPORT FOR THIS !!!!!');
 
   if(HeadMode and $00000002) <> 0 then
@@ -309,13 +316,58 @@ begin
     end
     else
     begin
-      fMemoryBundle.Seek(2, soFromCurrent); //size of this record, inclusive
+      RecordSize :=fMemoryBundle.ReadWord; //size of this record, inclusive
       TempStr := PChar(fMemoryBundle.ReadString(FSB_FileNameLength));
       Samples :=  fMemoryBundle.ReadDWord;
-      Size :=  fMemoryBundle.ReadDWord;;
-      fMemoryBundle.Seek(40, soFromCurrent); //Unused data for this
+      Size :=  fMemoryBundle.ReadDWord;
+      fMemoryBundle.Seek(8, soFromCurrent); //loopstart and loopend
+      Mode := fMemoryBundle.ReadDWord;
+      Frequency := fMemoryBundle.ReadDWord;
+      fMemoryBundle.Seek(24, soFromCurrent); //Unused data for this
+      if RecordSize > 80 then //Some files have extra data
+        fMemoryBundle.Seek(RecordSize - 80, soFromCurrent);
     end;
-    
+
+    //Now work out the codec it uses - for DF games its almost always MPEG
+    Codec := FMOD_SOUND_FORMAT_PCM16;
+    if (Mode and FSOUND_DELTA) <> 0 then
+      Codec := FMOD_SOUND_FORMAT_MPEG
+    else
+    if ((Mode and FSOUND_8BITS) <> 0) and (Codec = FMOD_SOUND_FORMAT_PCM16) then
+      Codec := FMOD_SOUND_FORMAT_PCM8;
+
+    //Match codec to file extension
+    case Codec of
+      FMOD_SOUND_FORMAT_PCM8:   FileExt := '.wav';
+      FMOD_SOUND_FORMAT_PCM16:  FileExt := '.wav';
+      FMOD_SOUND_FORMAT_MPEG:   FileExt := '.mp3'
+    else
+      begin
+        Log('Unknown codec');
+        FileExt := '.wav';
+      end;
+    end;
+
+    if fBundleFileName = 'GUI.fsb' then
+      Log('GUI.FSB in Iron Brigade...known problems with this file - sounds probably wont dump correctly.');
+
+
+    //Get no of channels
+    Channels := 1;
+    if (Mode and FSOUND_MONO) <> 0 then
+      Channels := 1
+    else
+    if (Mode and FSOUND_STEREO) <> 0 then
+      Channels := 2;
+
+    //Get bits
+    Bits := 16;
+    if (Mode and FSOUND_8BITS) <> 0 then
+      Bits := 8
+    else
+    if (Mode and FSOUND_16BITS) <> 0 then
+      Bits := 16;
+
     FileObject               := TFSBFile.Create;
     FileObject.size          := Size;
     if i = 0 then
@@ -323,9 +375,13 @@ begin
     else
       FileObject.offset      := PrevOffsetAndSize;
     PrevOffsetAndSize        :=  FileObject.size +  FileObject.Offset;
-    FileObject.FileName      := ChangeFileExt(Tempstr, '.mp3'); //Really should check the codec but seems like all are mp3 anyway
+    FileObject.FileName      := ChangeFileExt(Tempstr, FileExt);
     FileObject.FileType      := ft_Audio;
-    FileObject.FileExtension := '.MP3';
+    FileObject.FileExtension := FileExt;
+    FileObject.Codec         := Codec;
+    FileObject.Channels      := Channels;
+    FileObject.Bits          := Bits;
+    FileObject.Freq          := Frequency;
 
     BundleFiles.Add(FileObject);
   end;
@@ -445,6 +501,7 @@ begin
     FileObject.FileName      := Tempstr + '.mp3';
     FileObject.FileType      := ft_Audio;
     FileObject.FileExtension := '.MP3';
+    FileObject.Codec         := FMOD_SOUND_FORMAT_MPEG; //TODO - other codec detection for FSB5 - not needed by any games seen so far
 
     BundleFiles.Add(FileObject);
   end;
@@ -502,6 +559,7 @@ end;
 procedure TFSBManager.SaveFileToStream(FileNo: integer; DestStream: TStream);
 var
   Ext: string;
+  WavStream: TWaveStream;
 begin
   if TFSBFile(BundleFiles.Items[FileNo]).Size <= 0 then
   begin
@@ -519,7 +577,17 @@ begin
 
   fMemoryBundle.Seek(TFSBFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
 
-  DestStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
+  if (TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM8) or ((TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM16)) then
+  begin
+    WavStream := TWaveStream.Create(DestStream, TFSBFile(BundleFiles.Items[FileNo]).Channels, TFSBFile(BundleFiles.Items[FileNo]).Bits, TFSBFile(BundleFiles.Items[FileNo]).Freq );
+    try
+      WavStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
+    finally
+      WavStream.Free;
+    end;
+  end
+  else
+    DestStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
 
   DestStream.Position:=0;
 end;

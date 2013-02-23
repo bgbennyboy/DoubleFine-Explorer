@@ -23,8 +23,9 @@
 {
 TODO
 Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
-Iron Brigade apparently not all sounds working in FSB
-Filter by actual file extension no
+Iron Brigade - still some sounds not working - different codec?
+Filter by actual file extension no rather than type? Eg where type is blob but there's different extensions within that like lua, csv etc
+Audio - save as wav when necessary not just mp3 now
 
 }
 unit frmMain;
