@@ -25,7 +25,9 @@ TODO
 Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
 Iron Brigade - still some sounds not working - different codec?
 Filter by actual file extension no rather than type? Eg where type is blob but there's different extensions within that like lua, csv etc
-Audio - save as wav when necessary not just mp3 now
+Check Brutal Legend and add filetypes if needed
+
+
 
 }
 unit frmMain;
@@ -102,6 +104,7 @@ type
     btnPlay: TSpeedButton;
     btnPause: TSpeedButton;
     btnStop: TSpeedButton;
+    MenuItemOpenBrutalLegend: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -741,7 +744,10 @@ begin
     OpenDialog1.InitialDir:=GetCostumeQuestPath
   else
   if SenderName = 'MenuItemOpenIronBrigade' then
-    OpenDialog1.InitialDir:=GetIronBrigadePath;
+    OpenDialog1.InitialDir:=GetIronBrigadePath
+  else
+  if SenderName = 'MenuItemOpenBrutalLegend' then
+    OpenDialog1.InitialDir:=GetBrutalLegendPath;
 
 
   if OpenDialog1.Execute then
@@ -894,8 +900,24 @@ begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
 
-  SaveDialog1.Filter:='MP3 files|*.MP3';
-  SaveDialog1.DefaultExt:='.mp3';
+  if fExplorer.FileExtension[Tree.focusednode.Index] = 'MP3' then
+  begin
+    SaveDialog1.Filter:='MP3 files|*.mp3';
+    SaveDialog1.DefaultExt:='.mp3';
+  end
+  else
+  if fExplorer.FileExtension[Tree.focusednode.Index] = 'WAV' then
+  begin
+    SaveDialog1.Filter:='WAV files|*.wav';
+    SaveDialog1.DefaultExt:='.wav';
+  end
+  else
+  begin
+    DoLog('Unrecognised file extension!');
+    exit;
+  end;
+
+
   SaveDialog1.FileName:=ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' );
   if SaveDialog1.Execute = false then exit;
 
@@ -905,8 +927,6 @@ begin
     DoLog(strSavingFile + SaveDialog1.FileName);
 
     if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then
-    //if Ext = strWavExt then
-      //DecodeResult:=fExplorer.SaveWavToFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName))
       fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName))
     else
     begin

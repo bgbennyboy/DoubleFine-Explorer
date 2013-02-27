@@ -36,12 +36,13 @@ type
     fBundle: TExplorerFileStream;
     fMemoryBundle: TExplorerMemoryStream;
     fBundleFileName: string;
+    fEncrypted: boolean;
     function DetectBundle: boolean; override;
     function GetFilesCount: integer; override;
     function GetFileName(Index: integer): string; override;
     function GetFileSize(Index: integer): integer;  override;
     function GetFileOffset(Index: integer): integer; override;
-    function DecryptFSB(InStream, OutStream: TStream; Key: Array of byte): boolean;
+    function DecryptFSB(InStream: TStream; Offset, Size: integer; OutStream: TStream; Key: Array of byte; KeyOffset: integer = -1): boolean;
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     procedure Log(Text: string); override;
@@ -65,7 +66,7 @@ type
 
 const
     strErrInvalidFile:  string  = 'Not a valid FSB file';
-    Key1: array [0..9] of byte = ($44, $46, $6D, $33, $74, $34, $6C, $46, $54, $57); //DFm3t4lFTW
+    FSBKey: array [0..9] of byte = ($44, $46, $6D, $33, $74, $34, $6C, $46, $54, $57); //DFm3t4lFTW
 var
     WaveBankVersion: integer;
 
@@ -107,44 +108,80 @@ end;
 function TFSBManager.DetectBundle: boolean;
 var
   Temp: string;
-  TempStream: TMemoryStream;
+  FilesOffset: integer;
 begin
   Result := false;
+  fEncrypted := true;
+  FilesOffset := 0;
 
   Temp := fBundle.ReadBlockName;
   if (Temp = 'FSB5') or (Temp = 'FSB4') then //Unencrypted
   begin
+    fEncrypted := false;
     fMemoryBundle := TExplorerMemoryStream.Create;
+
+    if Temp = 'FSB4' then
+    begin
+      //Read the size of the sample headers to work out where the header ends and file data starts
+      fBundle.Position := 8;
+      FilesOffset := fBundle.ReadDWord + 48;
+    end
+    else
+    if Temp = 'FSB5' then
+    begin
+      //Read the size of the sample + name size headers to work out where the header ends and file data starts
+      fBundle.Position := 12;
+      FilesOffset := fBundle.ReadDWord + fBundle.ReadDWord + 60;
+    end;
+
+    //Then only copy out the header information
     fBundle.Position := 0;
-    fMemoryBundle.CopyFrom(fBundle, fBundle.Size); //Keep everything in memory - faster to read from and easier than dealing with different cases for file/memory stream
+    fMemoryBundle.CopyFrom(fBundle, FilesOffset); //Keep everything in memory - faster to read from and easier than dealing with different cases for file/memory stream
     Result := true;
   end
   else
   begin
-    tempstream:= tmemorystream.Create; //Doing the decryption from memory is MUCH faster than reading from disk
-    try
-      fBundle.Position := 0;
-      TempStream.CopyFrom(fBundle, fBundle.Size);
-      TempStream.Position :=0;
-      fMemoryBundle := TExplorerMemoryStream.Create;
+    fBundle.Position := 0;
+    fMemoryBundle := TExplorerMemoryStream.Create;
 
-      if DecryptFSB(TempStream, fMemoryBundle, Key1) then
+    if DecryptFSB(fBundle, 0, 4, fMemoryBundle, FSBKey) then
+    begin
+      //Then check again
+      fMemoryBundle.Position := 0;
+      Temp := fMemoryBundle.ReadBlockName;
+      if (Temp = 'FSB5') or (Temp = 'FSB4') then
       begin
-        //Then check again
-        fMemoryBundle.Position := 0;
-        Temp := fMemoryBundle.ReadBlockName;
-        if (Temp = 'FSB5') or (Temp = 'FSB4') then
-          Result := true;
+        Result := true;
+
+        //Decrypt the first few bytes so we can work out how big the header is
+        fMemoryBundle.Clear;
+        DecryptFSB(fBundle, 0, 20, fMemoryBundle, FSBKey);
+
+        if Temp = 'FSB4' then
+        begin
+          //Read the size of the sample headers to work out where the header ends and file data starts
+          fMemoryBundle.Position := 8;
+          FilesOffset := fMemoryBundle.ReadDWord + 48;
+        end
+        else
+        if Temp = 'FSB5' then
+        begin
+          //Read the size of the sample + name size headers to work out where the header ends and file data starts
+          fMemoryBundle.Position := 12;
+          FilesOffset := fMemoryBundle.ReadDWord + fMemoryBundle.ReadDWord + 60;
+        end;
+
+        //Then decrypt the full header
+        fMemoryBundle.Clear;
+        DecryptFSB(fBundle, 0, FilesOffset, fMemoryBundle, FSBKey)
       end;
-      //fMemoryBundle.SaveToFile('c:\users\ben\desktop\decrypted');
-    finally
-      tempstream.Free;
     end;
+    //fMemoryBundle.SaveToFile('c:\users\ben\desktop\decrypted');
   end;
 end;
 
-function TFSBManager.DecryptFSB(InStream, OutStream: TStream;
-  Key: array of byte): boolean;
+function TFSBManager.DecryptFSB(InStream: TStream; Offset, Size: integer;
+  OutStream: TStream; Key: Array of byte; KeyOffset: integer = -1): boolean;
 
   function ReverseBitsInByte(input: byte): byte; inline;
   var
@@ -165,8 +202,13 @@ var //TODO - read it in blocks and write whole lot at once
 begin
   Result := false;
 
-  j:=0;
-  for i := 0 to InStream.Size - 1 do
+  Instream.Position := Offset;
+
+  if KeyOffset = -1 then
+    KeyOffset := Offset; //If no key offset provided then we assume that we're dealing with the original file and calculate the key offset based on the file offset
+
+  j := KeyOffset mod length(Key); //Calculate what part of the key to start from
+  for i := 0 to Size - 1 do
   begin
     InStream.Read(TempByte, 1);
     TempByte := ReverseBitsInByte(TempByte) xor Key[j];
@@ -176,7 +218,7 @@ begin
     OutStream.Write(TempByte, 1);
   end;
 
-  if InStream.Size = OutStream.Size then result := true;
+  if Size = OutStream.Size then result := true;
 end;
 
 function TFSBManager.GetFileExtension(Index: integer): string;
@@ -297,9 +339,9 @@ begin
   NameOffset := 48; //size of initial header
   FileOffset := 48 + SampleHeaderSize;
   PrevOffsetAndSize := 0;
-  
+
   if (HeadMode and $08) <> 0 then
-    Log('BIG ENDIAN MODE DETECTED: IMPLEMENT SUPPORT FOR THIS !!!!!');
+    Log('BIG ENDIAN MODE DETECTED: TODO - IMPLEMENT SUPPORT FOR THIS !!!!!');
 
   if(HeadMode and $00000002) <> 0 then
     Log('Basic headers detected in this FSB!');
@@ -338,13 +380,13 @@ begin
 
     //Match codec to file extension
     case Codec of
-      FMOD_SOUND_FORMAT_PCM8:   FileExt := '.wav';
-      FMOD_SOUND_FORMAT_PCM16:  FileExt := '.wav';
-      FMOD_SOUND_FORMAT_MPEG:   FileExt := '.mp3'
+      FMOD_SOUND_FORMAT_PCM8:   FileExt := 'WAV';
+      FMOD_SOUND_FORMAT_PCM16:  FileExt := 'WAV';
+      FMOD_SOUND_FORMAT_MPEG:   FileExt := 'MP3'
     else
       begin
         Log('Unknown codec');
-        FileExt := '.wav';
+        FileExt := 'WAV';
       end;
     end;
 
@@ -375,7 +417,7 @@ begin
     else
       FileObject.offset      := PrevOffsetAndSize;
     PrevOffsetAndSize        :=  FileObject.size +  FileObject.Offset;
-    FileObject.FileName      := ChangeFileExt(Tempstr, FileExt);
+    FileObject.FileName      := ChangeFileExt(Tempstr, '.' + Lowercase(FileExt));
     FileObject.FileType      := ft_Audio;
     FileObject.FileExtension := FileExt;
     FileObject.Codec         := Codec;
@@ -500,7 +542,7 @@ begin
     FileObject.offset        := FileOff;
     FileObject.FileName      := Tempstr + '.mp3';
     FileObject.FileType      := ft_Audio;
-    FileObject.FileExtension := '.MP3';
+    FileObject.FileExtension := 'MP3';
     FileObject.Codec         := FMOD_SOUND_FORMAT_MPEG; //TODO - other codec detection for FSB5 - not needed by any games seen so far
 
     BundleFiles.Add(FileObject);
@@ -560,6 +602,7 @@ procedure TFSBManager.SaveFileToStream(FileNo: integer; DestStream: TStream);
 var
   Ext: string;
   WavStream: TWaveStream;
+  TempStream: TMemoryStream;
 begin
   if TFSBFile(BundleFiles.Items[FileNo]).Size <= 0 then
   begin
@@ -573,9 +616,29 @@ begin
     exit;
   end;
 
-  Ext:=Uppercase(ExtractFileExt(TFSBFile(BundleFiles.Items[FileNo]).FileName));
+  //Fill fMemoryBundle with the new file - decrypting if necessary
+  fMemoryBundle.Clear;
+  if fEncrypted then
+  begin
+    //much quicker to copy to memory then decrypt than do it from disk
+    TempStream := TMemoryStream.Create;
+    try
+      fBundle.Position := TFSBFile(BundleFiles.Items[FileNo]).Offset;
+      TempStream.CopyFrom(fBundle, TFSBFile(BundleFiles.Items[FileNo]).size);
+      DecryptFSB(Tempstream, 0, TempStream.size, fMemoryBundle, FSBKey, TFSBFile(BundleFiles.Items[FileNo]).Offset); //Provide the offset as last param so we know where the key should start from in the original file
+    finally
+      TempStream.Free;
+    end;
+  end
+  else
+  begin
+    fBundle.Position := TFSBFile(BundleFiles.Items[FileNo]).Offset;
+    fMemoryBundle.CopyFrom(fBundle, TFSBFile(BundleFiles.Items[FileNo]).size);
+  end;
 
-  fMemoryBundle.Seek(TFSBFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
+  fMemoryBundle.Position := 0;
+
+  Ext:=Uppercase(ExtractFileExt(TFSBFile(BundleFiles.Items[FileNo]).FileName));
 
   if (TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM8) or ((TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM16)) then
   begin

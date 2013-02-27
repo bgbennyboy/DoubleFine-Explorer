@@ -33,6 +33,7 @@ uses
   function GetStackingPath: string;
   function GetIronBrigadePath: string;
   function GetCostumeQuestPath: string;
+  function GetBrutalLegendPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
@@ -285,6 +286,22 @@ begin
   begin
      result:= ft_Unknown;
     //Log('Unknown file type ' + FileExt);
+  end;
+end;
+
+function GetBrutalLegendPath: string;
+const
+  ExtraPath: string = 'steamapps\Common\BrutalLegend\Win\';
+var
+  Temp: string;
+begin
+  Result := '';
+  try
+    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    result:=Temp + ExtraPath;
+    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
+  except on EJCLRegistryError do
+    result:='';
   end;
 end;
 

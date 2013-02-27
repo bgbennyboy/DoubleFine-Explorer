@@ -13450,12 +13450,17 @@ object formMain: TformMain
     end
     object MenuItemOpenIronBrigade: TMenuItem
       Caption = 'Iron Brigade'
-      ImageIndex = 4
+      ImageIndex = 5
       OnClick = OpenPopupMenuHandler
     end
     object MenuItemOpenCave: TMenuItem
       Caption = 'The Cave'
       ImageIndex = 1
+      OnClick = OpenPopupMenuHandler
+    end
+    object MenuItemOpenBrutalLegend: TMenuItem
+      Caption = 'Brutal Legend'
+      ImageIndex = 4
       OnClick = OpenPopupMenuHandler
     end
   end
@@ -13534,7 +13539,7 @@ object formMain: TformMain
     Left = 176
     Top = 216
     Bitmap = {
-      494C010110001100700010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010110001100800010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
