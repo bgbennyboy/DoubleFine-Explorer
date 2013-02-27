@@ -275,6 +275,61 @@ begin
   if FileExt = 'NavigationSystemGraph' then result:= ft_Other//
 
 
+  {Brutal Legend types}
+  else
+  if FileExt = 'DLCAchievementData' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'DLCRockmoreHeadMap' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'UpgradeCategory' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'UpgradeSet' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'SoloSetup' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'TechTree' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'PlaylistResource' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'MusicNameTable' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'VoiceSettings' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'AttachmentPointTable' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'EncounterTable' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'ArtBrowserAssets' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'DifficultySet' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'StrategicResponses' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'AIDifficulties' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'UnitInfos' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'GameMapRegions' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'JournalEntries' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'RockSolo' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'StatLimits' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'AnimMap' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'CutsceneClump' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'AlbumCover' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'HUDSkin' then result:= ft_DelimitedText//
+  else
+  if FileExt = 'VehicleKeyframeData' then result:= ft_Other//
+  else
+  if FileExt = 'FurData' then result:= ft_Other//
+
+
   {Audio}
   else
   if FileExt = '.MP3' then result:= ft_Audio //

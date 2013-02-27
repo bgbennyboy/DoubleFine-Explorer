@@ -25,11 +25,8 @@ TODO
 Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
 Iron Brigade - still some sounds not working - different codec?
 Filter by actual file extension no rather than type? Eg where type is blob but there's different extensions within that like lua, csv etc
-Check Brutal Legend and add filetypes if needed
-
-
-
 }
+
 unit frmMain;
 
 interface

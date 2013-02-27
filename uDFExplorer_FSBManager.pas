@@ -345,7 +345,10 @@ begin
 
   if(HeadMode and $00000002) <> 0 then
     Log('Basic headers detected in this FSB!');
-  
+
+
+  Mode := 0 ;
+  Frequency := 0;
   for I := 0 to NumSamples - 1 do
   begin  
     if ((HeadMode and $00000002) <> 0) and (i <> 0) then
@@ -416,7 +419,7 @@ begin
       FileObject.offset      := FileOffset
     else
       FileObject.offset      := PrevOffsetAndSize;
-    PrevOffsetAndSize        :=  FileObject.size +  FileObject.Offset;
+    PrevOffsetAndSize        := FileObject.size +  FileObject.Offset;
     FileObject.FileName      := ChangeFileExt(Tempstr, '.' + Lowercase(FileExt));
     FileObject.FileType      := ft_Audio;
     FileObject.FileExtension := FileExt;
@@ -507,8 +510,7 @@ begin
       Size := fMemoryBundle.ReadDWord;
       if Size = 0 then  //not sure about this
       begin
-        fMemoryBundle.Position := fMemoryBundle.Size; //Seek till the end?
-        Size := fMemoryBundle.Position;
+        Size := fBundle.Size; //Size of the original file (remember MemoryBundle only contains the header)
       end
       else
       begin
@@ -519,8 +521,7 @@ begin
     end
     else
     begin
-      fMemoryBundle.Position := fMemoryBundle.Size; //Seek till the end?
-      Size := fMemoryBundle.Position;
+      Size := fBundle.Size; //Size of the original file (remember MemoryBundle only contains the header)
     end;
 
     fMemoryBundle.Seek(TempQWord, sofrombeginning);
