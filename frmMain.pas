@@ -22,8 +22,7 @@
 }
 {
 TODO
-Tiny mp3 files dont play - Need to check for mp3 alignment and realign?
-Iron Brigade - still some sounds not working - different codec?
+Iron Brigade + UI.fsb in The Cave - still some sounds not working - different codec? Looks like FSB says mp3/wav but actually another codec
 Filter by actual file extension no rather than type? Eg where type is blob but there's different extensions within that like lua, csv etc
 }
 

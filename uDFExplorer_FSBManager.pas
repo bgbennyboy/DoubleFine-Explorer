@@ -176,7 +176,7 @@ begin
         DecryptFSB(fBundle, 0, FilesOffset, fMemoryBundle, FSBKey)
       end;
     end;
-    //fMemoryBundle.SaveToFile('c:\users\ben\desktop\decrypted');
+    //fMemoryBundle.SaveToFile('c:\users\ben\desktop\decrypted.fsb');
   end;
 end;
 
@@ -392,10 +392,6 @@ begin
         FileExt := 'WAV';
       end;
     end;
-
-    if fBundleFileName = 'GUI.fsb' then
-      Log('GUI.FSB in Iron Brigade...known problems with this file - sounds probably wont dump correctly.');
-
 
     //Get no of channels
     Channels := 1;
@@ -652,6 +648,7 @@ begin
   end
   else
     DestStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
+
 
   DestStream.Position:=0;
 end;

@@ -27,7 +27,7 @@ interface
 
 const
   strAppName:     string = 'DoubleFine Explorer';
-  strAppVersion:  string = '0.1.0';
+  strAppVersion:  string = '1.0';
   strAppURL:      string = 'http://quickandeasysoftware.net';
 
 
