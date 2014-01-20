@@ -13305,7 +13305,7 @@ object formMain: TformMain
     Flat = False
   end
   object OpenDialog1: TOpenDialog
-    Filter = 'H And FSBFiles|*.~h;*.FSB|All Files|*'
+    Filter = 'H, FSB and PCK Files|*.~h;*.FSB;*.PCK|All Files|*'
     Left = 24
     Top = 88
   end
@@ -13438,14 +13438,19 @@ object formMain: TformMain
     object N2: TMenuItem
       Caption = '-'
     end
+    object MenuItemOpenBrokenAge: TMenuItem
+      Caption = 'Broken Age'
+      ImageIndex = 7
+      OnClick = OpenPopupMenuHandler
+    end
+    object MenuItemOpenBrutalLegend: TMenuItem
+      Caption = 'Brutal Legend'
+      ImageIndex = 4
+      OnClick = OpenPopupMenuHandler
+    end
     object MenuItemOpenCostumeQuest: TMenuItem
       Caption = 'Costume Quest'
       ImageIndex = 3
-      OnClick = OpenPopupMenuHandler
-    end
-    object MenuItemOpenStacking: TMenuItem
-      Caption = 'Stacking'
-      ImageIndex = 2
       OnClick = OpenPopupMenuHandler
     end
     object MenuItemOpenIronBrigade: TMenuItem
@@ -13453,14 +13458,14 @@ object formMain: TformMain
       ImageIndex = 5
       OnClick = OpenPopupMenuHandler
     end
+    object MenuItemOpenStacking: TMenuItem
+      Caption = 'Stacking'
+      ImageIndex = 2
+      OnClick = OpenPopupMenuHandler
+    end
     object MenuItemOpenCave: TMenuItem
       Caption = 'The Cave'
       ImageIndex = 1
-      OnClick = OpenPopupMenuHandler
-    end
-    object MenuItemOpenBrutalLegend: TMenuItem
-      Caption = 'Brutal Legend'
-      ImageIndex = 4
       OnClick = OpenPopupMenuHandler
     end
   end
@@ -13539,7 +13544,7 @@ object formMain: TformMain
     Left = 176
     Top = 216
     Bitmap = {
-      494C010110001100940010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010110001100A80010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

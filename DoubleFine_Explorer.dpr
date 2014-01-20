@@ -33,7 +33,8 @@ uses
   uDFExplorer_Funcs in 'uDFExplorer_Funcs.pas',
   uDFExplorer_FSBManager in 'uDFExplorer_FSBManager.pas',
   frmAbout in 'frmAbout.pas' {Aboutfrm},
-  uDFExplorer_BaseBundleManager in 'uDFExplorer_BaseBundleManager.pas';
+  uDFExplorer_BaseBundleManager in 'uDFExplorer_BaseBundleManager.pas',
+  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas';
 
 {$R *.res}
 

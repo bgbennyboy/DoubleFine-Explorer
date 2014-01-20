@@ -101,6 +101,7 @@ type
     btnPause: TSpeedButton;
     btnStop: TSpeedButton;
     MenuItemOpenBrutalLegend: TMenuItem;
+    MenuItemOpenBrokenAge: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -143,6 +144,7 @@ type
     fHexEditorPath: string;
     fFilesToCleanup: TStringList;
     function IsViewFilteredByCategory: boolean;
+    function GetCommandLineFilePath: string;
     procedure OnDoneLoading(Count: integer);
     procedure DoLog(Text: string);
     procedure FreeResources;
@@ -173,6 +175,8 @@ uses frmAbout;
 
 
 procedure TformMain.FormCreate(Sender: TObject);
+var
+  FileToOpen: string;
 begin
   formMain.Caption := strAppName + ' ' + strAppVersion;
 
@@ -214,6 +218,20 @@ begin
     editFind.Left := 412;
     editFind.Width := 450;
   end;
+
+  //Check command line switch - may need to open a passed file (hack for fsb files in broken age)
+  FileToOpen := GetCommandLineFilePath;
+  if FileToOpen <> '' then
+  begin
+    OpenDialog1.FileName := FileToOpen;
+    OpenFile;
+
+    //Add file to list so it can be cleaned up later if possible
+    if fFilesToCleanup = nil then
+      fFilesToCleanUp := TStringList.Create;
+    fFilesToCleanUp.Add(FileToOpen);
+  end;
+
 end;
 
 procedure TformMain.FormDestroy(Sender: TObject);
@@ -263,6 +281,12 @@ begin
 
   StopAndFreeAudio;
 
+
+  //In case invalid files are opened twice in succession
+  if fExplorer <> nil then
+    FreeAndNil(FExplorer);
+
+
   //Try and delete any temp files sent to hex editor
   if fFilesToCleanup <> nil then
   begin
@@ -275,9 +299,6 @@ begin
         FreeAndNil(fFilesToCleanup);
   end;
 
-  //In case invalid files are opened twice in succession
-  if fExplorer <> nil then
-    FreeAndNil(FExplorer);
 
   if MyPopUpItems <> nil then
   begin
@@ -286,6 +307,24 @@ begin
 
     MyPopUpItems:=nil;
   end;
+end;
+
+function TformMain.GetCommandLineFilePath: string;
+var
+  intTemp: integer;
+  tempParam: string;
+begin
+  //First find what number param the switch is
+  intTemp:=FindParamIndex(strCmdLineOpenAndDelete);
+  if (intTemp <> -1) and (ParamCount >= intTemp + 1) then
+  begin
+    tempParam:=ParamStr(intTemp + 1); //Paramstr automatically parses out speech marks
+    tempParam:=Trim(TempParam); //Remove trailing spaces
+
+    result:=tempParam;
+  end
+  else
+    result:='';
 end;
 
 
@@ -552,6 +591,8 @@ begin
 end;
 
 procedure TformMain.TreeDblClick(Sender: TObject);
+var
+  NewName: string;
 begin
   //Audio types
   if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then
@@ -561,6 +602,27 @@ begin
     btnPlay.Click;
   end;
 
+  //Broken Age hack - dump the fsb and reopen
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile then
+  begin
+    EnableDisableButtonsGlobal(false);
+    try
+      try
+        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
+        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+      except on E: EFCreateError do
+      begin //get new name if its already there and open
+        NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
+        DoLog(strErrHexFileExists + NewName);
+        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName));
+        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+      end;
+      end;
+
+    finally
+      EnableDisableButtonsGlobal(true);
+    end;
+  end;
 
 end;
 
@@ -583,7 +645,8 @@ begin
     ft_CSVText:  ImageIndex:= 14;
     ft_Audio: ImageIndex:= 12;
     ft_Other: ImageIndex:= 5;
-    ft_Unknown: ImageIndex:=5
+    ft_Unknown: ImageIndex:=5;
+    ft_FSBFile: ImageIndex:=12
   else
     ImageIndex:=5;
   end;
@@ -662,6 +725,7 @@ begin
         ft_Audio:  MyPopupItems[i].ImageIndex:=12;
         ft_Other:   MyPopupItems[i].ImageIndex:=5;
         ft_Unknown: MyPopupItems[i].ImageIndex:=5;
+        ft_FSBFile: MyPopupItems[i].ImageIndex:=12;
         else
           MyPopupItems[i].ImageIndex:=5;
       end;
@@ -743,8 +807,10 @@ begin
     OpenDialog1.InitialDir:=GetIronBrigadePath
   else
   if SenderName = 'MenuItemOpenBrutalLegend' then
-    OpenDialog1.InitialDir:=GetBrutalLegendPath;
-
+    OpenDialog1.InitialDir:=GetBrutalLegendPath
+  else
+  if SenderName = 'MenuItemOpenBrokenAge' then
+    OpenDialog1.InitialDir:=GetBrokenAgePath;
 
   if OpenDialog1.Execute then
     OpenFile;

@@ -34,9 +34,11 @@ uses
   function GetIronBrigadePath: string;
   function GetCostumeQuestPath: string;
   function GetBrutalLegendPath: string;
+  function GetBrokenAgePath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
+  function FindParamIndex(Param: string): integer;
 
 implementation
 
@@ -330,6 +332,73 @@ begin
   if FileExt = 'FurData' then result:= ft_Other//
 
 
+  {Broken Age types}
+  else
+  if FileExt = 'lua' then result:= ft_Other//
+  else
+  if FileExt = 'list' then result:= ft_Text//
+  else
+  if FileExt = 'settings' then result:= ft_Text//
+  else
+  if FileExt = 'clump' then result:= ft_Text//
+  else
+  if FileExt = 'effect' then result:= ft_Text//
+  else
+  if FileExt = 'fnt' then result:= ft_Text//
+  else
+  if FileExt = 'id' then result:= ft_Text//
+  else
+  if FileExt = 'sdoc' then result:= ft_Text//
+  else
+  if FileExt = 'texparams' then result:= ft_Text//
+  else
+  if FileExt = 'fsb' then result:= ft_FSBFile//
+  else
+  if FileExt = 'fev' then result:= ft_Other//
+  else
+  if FileExt = 'dtree' then result:= ft_Other//
+  else
+  if FileExt = 'envstate' then result:= ft_Other//
+  else
+  if FileExt = 'inv' then result:= ft_Other//
+  else
+  if FileExt = 'loco' then result:= ft_Other//
+  else
+  if FileExt = 'material' then result:= ft_Other//
+  else
+  if FileExt = 'matmod' then result:= ft_Other//
+  else
+  if FileExt = 'proto' then result:= ft_Other//
+  else
+  if FileExt = 'scene' then result:= ft_Other//
+  else
+  if FileExt = 'stance' then result:= ft_Other//
+  else
+  if FileExt = 'brig' then result:= ft_Other//
+  else
+  if FileExt = 'rig' then result:= ft_Other//
+  else
+  if FileExt = 'tex' then result:= ft_Other//
+  else
+  if FileExt = 'anim' then result:= ft_Other//
+  else
+  if FileExt = 'banim' then result:= ft_Other//
+  else
+  if FileExt = 'particles' then result:= ft_Other//
+  else
+  if FileExt = 'font' then result:= ft_Other//
+  else
+  if FileExt = 'bsdoc' then result:= ft_Other//
+  else
+  if FileExt = 'bshd' then result:= ft_Other//
+  else
+  if FileExt = 'ctsn' then result:= ft_Other//
+  else
+  if FileExt = 'canim' then result:= ft_Text//
+  else
+  if FileExt = 'caff' then result:= ft_Other//
+
+
   {Audio}
   else
   if FileExt = '.MP3' then result:= ft_Audio //
@@ -341,6 +410,22 @@ begin
   begin
      result:= ft_Unknown;
     //Log('Unknown file type ' + FileExt);
+  end;
+end;
+
+function GetBrokenAgePath: string;
+const
+  ExtraPath: string = 'steamapps\Common\Broken Age\';
+var
+  Temp: string;
+begin
+  Result := '';
+  try
+    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    result:=Temp + ExtraPath;
+    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
+  except on EJCLRegistryError do
+    result:='';
   end;
 end;
 
@@ -474,6 +559,20 @@ asm
   bswap eax
 end;
 
+function FindParamIndex(Param: string): integer;
+var  //Remember to include / in param when calling this, since ParamStr returns the /
+  i: integer;
+begin
+  result:=-1;
 
+  for i := 1 to ParamCount do
+  begin
+    if Uppercase(Param) = Uppercase(ParamStr(i)) then
+    begin
+      result:=i;
+      break;
+    end;
+  end;
+end;
 
 end.

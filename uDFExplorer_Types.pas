@@ -42,6 +42,7 @@ type
     ft_DelimitedText,
     ft_Other,
     ft_Audio,
+    ft_FSBFile,
     ft_Unknown
   );
 

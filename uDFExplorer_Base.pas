@@ -31,7 +31,7 @@ uses
   GR32, ImagingComponents, ZlibExGz,
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
-  uDFExplorer_FSBManager, uDFExplorer_PAKManager;
+  uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager;
 
 type
   TDFExplorerBase = class
@@ -83,6 +83,9 @@ begin
   try
     if Uppercase( ExtractFileExt(BundleFile) ) = '.FSB' then
       fBundle:=TFSBManager.Create(BundleFile)
+    else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.PCK' then
+      fBundle:=TPCKManager.Create(BundleFile)
     else
       fBundle:=TPAKManager.Create(BundleFile);
   except on E: EInvalidFile do

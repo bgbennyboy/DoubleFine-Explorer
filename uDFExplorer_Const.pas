@@ -26,9 +26,10 @@ unit uDFExplorer_Const;
 interface
 
 const
-  strAppName:     string = 'DoubleFine Explorer';
-  strAppVersion:  string = '1.0';
-  strAppURL:      string = 'http://quickandeasysoftware.net';
+  strAppName:              string = 'DoubleFine Explorer';
+  strAppVersion:           string = '1.01';
+  strAppURL:               string = 'http://quickandeasysoftware.net';
+  strCmdLineOpenAndDelete: string = '/OPENFILEANDDELETELATER';
 
 
 {**********************************Main Form***********************************}
