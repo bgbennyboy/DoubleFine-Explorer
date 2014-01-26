@@ -13500,6 +13500,11 @@ object formMain: TformMain
       ImageIndex = 12
       OnClick = menuItemDumpAudioClick
     end
+    object menuItemDumpLua: TMenuItem
+      Caption = 'As lua'
+      ImageIndex = 15
+      OnClick = menuItemDumpLuaClick
+    end
   end
   object popupSaveAll: TAdvPopupMenu
     Images = ImageList1
@@ -13537,6 +13542,11 @@ object formMain: TformMain
       ImageIndex = 12
       OnClick = menuItemSaveAllAudioClick
     end
+    object menuItemSaveAllLua: TMenuItem
+      Caption = 'Save all lua'
+      ImageIndex = 15
+      OnClick = menuItemSaveAllLuaClick
+    end
   end
   object ImageList1: TImageList
     ColorDepth = cd32Bit
@@ -13544,7 +13554,7 @@ object formMain: TformMain
     Left = 176
     Top = 216
     Bitmap = {
-      494C010110001100C00010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010110001100C80010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

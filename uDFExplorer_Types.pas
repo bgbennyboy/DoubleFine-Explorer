@@ -41,9 +41,10 @@ type
     ft_Text,
     ft_CSVText,
     ft_DelimitedText,
-    ft_Other,
     ft_Audio,
     ft_FSBFile,
+    ft_LUA,
+    ft_Other,
     ft_Unknown
   );
 

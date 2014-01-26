@@ -368,8 +368,6 @@ begin
     exit;
   end;
 
-  Log(strSavingFile + FileName);
-
   SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
   try
     SaveFileToStream(FileNo,SaveFile);

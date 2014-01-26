@@ -58,6 +58,11 @@
 			</DCCReference>
 			<DCCReference Include="uDFExplorer_BaseBundleManager.pas"/>
 			<DCCReference Include="uDFExplorer_PCKManager.pas"/>
+			<RcItem Include="Resources\luadec.exe">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>RCData</ResourceType>
+				<ResourceId>luadec</ResourceId>
+			</RcItem>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
@@ -88,8 +93,8 @@
 						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
 						<VersionInfo Name="MajorVer">1</VersionInfo>
-						<VersionInfo Name="MinorVer">0</VersionInfo>
-						<VersionInfo Name="Release">1</VersionInfo>
+						<VersionInfo Name="MinorVer">1</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
 						<VersionInfo Name="Build">0</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
@@ -102,13 +107,13 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Quick and Easy Software</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">DoubleFine Explorer</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.0.1.0</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.1.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">DoubleFine Explorer</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalCopyright">Bennyboy 2014</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks"/>
 						<VersionInfoKeys Name="OriginalFilename">DoubleFine Explorer.exe</VersionInfoKeys>
 						<VersionInfoKeys Name="ProductName">DoubleFine Explorer</VersionInfoKeys>
-						<VersionInfoKeys Name="ProductVersion">1.0.1.0</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">1.1.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments">http://quickandeasysoftware.net</VersionInfoKeys>
 					</VersionInfoKeys>
 					<Excluded_Packages>

@@ -102,6 +102,8 @@ type
     btnStop: TSpeedButton;
     MenuItemOpenBrutalLegend: TMenuItem;
     MenuItemOpenBrokenAge: TMenuItem;
+    menuItemSaveAllLua: TMenuItem;
+    menuItemDumpLua: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -135,6 +137,8 @@ type
     procedure menuItemSaveAllAudioClick(Sender: TObject);
     procedure btnSendToHexClick(Sender: TObject);
     procedure menuItemSaveAllVisibleRawClick(Sender: TObject);
+    procedure menuItemSaveAllLuaClick(Sender: TObject);
+    procedure menuItemDumpLuaClick(Sender: TObject);
   private
     fExplorer: TDFExplorerBase;
     fAudioStream: TMemoryStream;
@@ -143,8 +147,11 @@ type
     fTrackBarChanging: boolean;
     fHexEditorPath: string;
     fFilesToCleanup: TStringList;
+    fLuaDecExe: string;
     function IsViewFilteredByCategory: boolean;
     function GetCommandLineFilePath: string;
+    function CaptureConsoleOutput(const ACommand, AParameters: String): ansistring;
+    function DecompileLuaToString(FileNo: integer): string;
     procedure OnDoneLoading(Count: integer);
     procedure DoLog(Text: string);
     procedure FreeResources;
@@ -177,6 +184,7 @@ uses frmAbout;
 procedure TformMain.FormCreate(Sender: TObject);
 var
   FileToOpen: string;
+  ResStream: TResourceStream;
 begin
   formMain.Caption := strAppName + ' ' + strAppVersion;
 
@@ -232,6 +240,24 @@ begin
     fFilesToCleanUp.Add(FileToOpen);
   end;
 
+  //Extract luadec for later use
+  fLuaDecExe := IncludeTrailingPathDelimiter(Getwindowstempfolder) + 'luadec.exe';
+  ResStream := TResourceStream.Create(hInstance, 'luadec', RT_RCDATA);
+  try
+    try
+      if FileExists(fLuaDecExe) then //Want it to make a new file not overwrite existing one - could be 2 instances open eg with fsb files
+        fLuaDecExe := FindUnusedFileName(fLuaDecExe, '.exe');
+
+      ResStream.SaveToFile(fLuaDecExe);
+     except on E: EFCreateError do //If it tries to overwrite and cant this gets raised
+     begin
+      fLuaDecExe := FindUnusedFileName(fLuaDecExe, '.exe');
+      ResStream.SaveToFile(fLuaDecExe);
+     end;
+    end;
+  finally
+    ResStream.Free;
+  end;
 end;
 
 procedure TformMain.FormDestroy(Sender: TObject);
@@ -239,6 +265,11 @@ begin
   FreeResources;
   if fFilesToCleanup <> nil then //might still be open if not all files could be deleted in FreeResources()
     fFilesToCleanup.Free;
+
+  //Delete luadec exe we extracted when program started
+  RemoveReadOnlyFileAttribute(fLuaDecExe); //Occasionally possible to become read only on some systems if the file thats copied like the exe is already read only
+  DeleteFile(fLuaDecExe);
+
   BASS_Free;
 end;
 
@@ -291,7 +322,10 @@ begin
   if fFilesToCleanup <> nil then
   begin
     for i := fFilesToCleanup.Count - 1 downto 0 do
+    begin
+      RemoveReadOnlyFileAttribute(fFilesToCleanup[i]); //Occasionally possible to become read only on some systems if the file thats copied like the exe is already read only
       if DeleteFile(fFilesToCleanup[i]) then fFilesToCleanup.Delete(i);
+    end;
 
      {if theres still files to be deleted - keep them on the list - FreeResources is called
       every time a ttarch is opened so could free it later}
@@ -366,7 +400,7 @@ begin
 
     False:
     begin
-      jvgifanimator1.Animate := false;
+      JvGifAnimator1.Animate := false;
       panelProgress.Visible:=false;
     end;
   end;
@@ -464,8 +498,9 @@ begin
   begin
     menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
     menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
-    menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText);
+    menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or(fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
     menuItemDumpAudio.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_Audio;
+    menuItemDumpLua.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_Lua;
   end;
 end;
 
@@ -490,6 +525,7 @@ begin
   menuItemSaveAllText.Visible:=false;
   menuItemSaveAllDDSImages.Visible:=false;
   menuItemSaveAllAudio.Visible:=false;
+  menuItemSaveAllLua.Visible:=false;
 
 
   for i:=0 to tree.RootNodeCount -1 do
@@ -505,6 +541,8 @@ begin
       menuItemSaveAllText.Visible:=true;
     if fExplorer.FileType[i]  = ft_Audio then
       menuItemSaveAllAudio.Visible:=true;
+    if fExplorer.FileType[i] = ft_Lua then
+      menuItemSaveAllLua.Visible := true;
   end;
 end;
 
@@ -586,9 +624,27 @@ begin
   end;
 
   //Audio types
-  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio then
+  if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) then
   begin
     panelPreviewAudio.BringToFront;
+  end;
+
+  //Compiled LUA
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_LUA then
+  begin
+    panelPreviewText.BringToFront;
+    memoPreview.Clear;
+
+    memoPreview.Lines.BeginUpdate;
+    EnableDisableButtonsGlobal(false);
+    try
+      memoPreview.Text :=( DecompileLuaToString(Tree.FocusedNode.Index) );
+    finally
+      EnableDisableButtonsGlobal(true);
+      memoPreview.Lines.EndUpdate;
+      formMain.FocusControl(Tree); //Disabling the controls takes the focus from this - so when restored couldnt use keyboard
+    end;
+
   end;
 end;
 
@@ -610,13 +666,13 @@ begin
     EnableDisableButtonsGlobal(false);
     try
       try
-        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
+        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), false);
         ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
       except on E: EFCreateError do
       begin //get new name if its already there and open
         NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
         DoLog(strErrHexFileExists + NewName);
-        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName));
+        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName), false);
         ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
       end;
       end;
@@ -642,14 +698,16 @@ begin
   case FileType of
     ft_GenericImage:        ImageIndex:= 8;
     ft_DDSImage:            ImageIndex:= 8;
-    ft_HeaderlessDDSImage:  ImageIndex := 8;
+    ft_HeaderlessDDSImage:  ImageIndex:= 8;
     ft_Text:                ImageIndex:= 9;
     ft_DelimitedText:       ImageIndex:= 14;
     ft_CSVText:             ImageIndex:= 14;
     ft_Audio:               ImageIndex:= 12;
+    ft_FSBFile:             ImageIndex:= 12;
+    ft_LUA:                 ImageIndex:= 15;
     ft_Other:               ImageIndex:= 5;
-    ft_Unknown:             ImageIndex:=5;
-    ft_FSBFile:             ImageIndex:=12
+    ft_Unknown:             ImageIndex:= 5;
+
   else
     ImageIndex:=5;
   end;
@@ -728,6 +786,7 @@ begin
         ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
         ft_Audio:               MyPopupItems[i].ImageIndex:=12;
         ft_Other:               MyPopupItems[i].ImageIndex:=5;
+        ft_LUA:                 MyPopupItems[i].ImageIndex:=15;
         ft_Unknown:             MyPopupItems[i].ImageIndex:=5;
         ft_FSBFile:             MyPopupItems[i].ImageIndex:=12;
         else
@@ -929,6 +988,34 @@ begin
 
 end;
 
+procedure TformMain.menuItemDumpLuaClick(Sender: TObject);
+var
+  TempStrings: TStringList;
+begin
+  if Tree.RootNodeCount=0 then exit;
+  if Tree.SelectedCount=0 then exit;
+
+  SaveDialog1.Filter:='Lua files|*.lua';
+  SaveDialog1.DefaultExt:='.lua';
+  SaveDialog1.FileName:= SanitiseFileName( ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+  if SaveDialog1.Execute = false then exit;
+
+  TempStrings:=TStringList.Create;
+  try
+    EnableDisableButtonsGlobal(false);
+    DoLog(strSavingFile + SaveDialog1.FileName);
+
+    if fExplorer.FileType[Tree.FocusedNode.Index] = ft_Lua then
+      TempStrings.Text := DecompileLuaToString(Tree.FocusedNode.Index);
+
+    TempStrings.SaveToFile( SaveDialog1.FileName );
+  finally
+    TempStrings.Free;
+    DoLog(strDone);
+    EnableDisableButtonsGlobal(true);
+  end;
+end;
+
 procedure TformMain.menuItemDumpTextClick(Sender: TObject);
 var
   TempStrings: TStringList;
@@ -953,7 +1040,10 @@ begin
       fExplorer.ReadCSVText(Tree.focusednode.Index, TempStrings)
     else
     if fExplorer.FileType[Tree.FocusedNode.Index] = ft_DelimitedText then
-      fExplorer.ReadDelimitedText(Tree.FocusedNode.Index, TempStrings);
+      fExplorer.ReadDelimitedText(Tree.FocusedNode.Index, TempStrings)
+    else
+    if fExplorer.FileType[Tree.FocusedNode.Index] = ft_Lua then
+      TempStrings.Text := DecompileLuaToString(Tree.FocusedNode.Index);
 
     TempStrings.SaveToFile( SaveDialog1.FileName );
   finally
@@ -1077,7 +1167,6 @@ begin
       else
         Headerless := false;
 
-      DecodeResult:=false;
       ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
       DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), Headerless);
 
@@ -1173,6 +1262,47 @@ begin
     DoLog(strDone);
   end;
 
+end;
+
+procedure TformMain.menuItemSaveAllLuaClick(Sender: TObject);
+var
+  TempNode: pVirtualNode;
+  OutStrings: TStringList;
+begin
+  if Tree.RootNodeCount=0 then exit;
+  if dlgBrowseforSaveFolder.Execute = false then exit;
+
+  OutStrings := TStringList.Create;
+  EnableDisableButtonsGlobal(false);
+  try
+    DoLog(strDumpingAllLua);
+    ShowProgress(True);
+
+    TempNode:=Tree.GetFirst;
+    while (tempNode <> nil) do
+    begin
+      if fExplorer.FileType[TempNode.Index] <> ft_Lua then //not a lua file
+      begin
+        TempNode:=Tree.GetNext(TempNode);
+        continue;
+      end;
+
+      OutStrings.Text :=( DecompileLuaToString(TempNode.Index) );
+
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+      OutStrings.SaveToFile(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.lua'));
+      OutStrings.Clear;
+
+      Application.ProcessMessages;
+      TempNode:=Tree.GetNext(TempNode);
+    end;
+
+  finally
+    EnableDisableButtonsGlobal(true);
+    OutStrings.Free;
+    ShowProgress(False);
+    DoLog(strDone);
+  end;
 end;
 
 procedure TformMain.menuItemSaveAllRawClick(Sender: TObject);
@@ -1419,13 +1549,37 @@ end;
 
 procedure TformMain.btnPlayClick(Sender: TObject);
 var
-  strSecs: string;
+  strSecs, NewName: string;
   ByteLength: QWord;
   SecsLength: Double;
   Seconds: Integer;
 begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
+
+  //Broken Age hack - dump the fsb and reopen
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile then
+  begin
+    EnableDisableButtonsGlobal(false);
+    try
+      try
+        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), false);
+        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+        Exit;
+      except on E: EFCreateError do
+      begin //get new name if its already there and open
+        NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
+        DoLog(strErrHexFileExists + NewName);
+        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName), false);
+        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+        Exit;
+      end;
+      end;
+
+    finally
+      EnableDisableButtonsGlobal(true);
+    end;
+  end;
 
   if fExplorer.FileType[Tree.focusednode.Index] <> ft_Audio then
   begin
@@ -1551,4 +1705,108 @@ begin
   end;
 end;
 
+
+
+
+{***********************   External decompiler Stuff   ***********************}
+function TformMain.DecompileLuaToString(FileNo: integer): string;
+var
+  TempStringList: TStringList;
+  LuaFile: string;
+begin
+  Result := '';
+  if (FileNo < 0) or (FileNo > Tree.RootNodeCount) then
+  begin
+    DoLog('Invalid file number! Lua decompile failed.');
+    exit;
+  end;
+
+  LuaFile := IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[FileNo]));
+  try
+    fExplorer.SaveFile(FileNo, ExtractFilePath(LuaFile), ExtractFileName(LuaFile), false);
+  except on E: EFCreateError do
+  begin
+    LuaFile := FindUnusedFileName(LuaFile, '.lua');
+    fExplorer.SaveFile(FileNo, ExtractFilePath(LuaFile), ExtractFileName(LuaFile), false);
+  end;
+  end;
+
+  //Add to list to cleanup later
+  if fFilesToCleanup = nil then
+    fFilesToCleanUp := TStringList.Create;
+  fFilesToCleanUp.Add(LuaFile);
+
+  TempStringList := TStringList.Create;
+  try
+    TempStringList.Text := String( (CaptureConsoleOutput(fLuaDecExe + ' ' + LuaFile, '')) );
+    if TempStringList.Count > 3 then
+    begin
+      TempStringList.Delete(0);
+      TempStringList.Delete(0);
+    end;
+  finally
+    Result := Trim( TempStringList.Text );
+    TempStringList.Free;
+  end;
+end;
+
+function TformMain.CaptureConsoleOutput(const ACommand, AParameters: String): ansistring;
+const
+  CReadBuffer = 2400;
+var
+  saSecurity: TSecurityAttributes;
+  hRead: THandle;
+  hWrite: THandle;
+  suiStartup: TStartupInfo;
+  piProcess: TProcessInformation;
+  pBuffer: array [0 .. CReadBuffer] of AnsiChar;
+  dBuffer: array [0 .. CReadBuffer] of AnsiChar;
+  dRead: DWORD;
+  dRunning: DWORD;
+  dAvailable: DWORD;
+  dwMode: cardinal;
+begin
+  saSecurity.nLength := SizeOf(TSecurityAttributes);
+  saSecurity.bInheritHandle := true;
+  saSecurity.lpSecurityDescriptor := nil;
+  if CreatePipe(hRead, hWrite, @saSecurity, 0) then
+    try
+      FillChar(suiStartup, SizeOf(TStartupInfo), #0);
+      suiStartup.cb := SizeOf(TStartupInfo);
+      suiStartup.hStdInput := hRead;
+      suiStartup.hStdOutput := hWrite;
+      suiStartup.hStdError := hWrite;
+      suiStartup.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+      suiStartup.wShowWindow := SW_HIDE;
+
+      //Stops luadec crashes from creating a windows error dialog.
+      dwMode := SetErrorMode(SEM_NOGPFAULTERRORBOX);
+      SetErrorMode(dwMode or SEM_NOGPFAULTERRORBOX);
+
+      if CreateProcess(nil, PChar(ACommand + ' ' + AParameters), @saSecurity, @saSecurity, true, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup,
+        piProcess) then
+        try
+          repeat
+            dRunning := WaitForSingleObject(piProcess.hProcess, 100);
+            PeekNamedPipe(hRead, nil, 0, nil, @dAvailable, nil);
+            if (dAvailable > 0) then
+              repeat
+                dRead := 0;
+                ReadFile(hRead, pBuffer[0], CReadBuffer, dRead, nil);
+                pBuffer[dRead] := #0;
+                OemToCharA(pBuffer, dBuffer);
+                //CallBack(dBuffer);
+                Result := Result + dBuffer;
+              until (dRead < CReadBuffer);
+            Application.ProcessMessages;
+          until (dRunning <> WAIT_TIMEOUT);
+        finally
+          CloseHandle(piProcess.hProcess);
+          CloseHandle(piProcess.hThread);
+        end;
+    finally
+      CloseHandle(hRead);
+      CloseHandle(hWrite);
+    end;
+end;
 end.

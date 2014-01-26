@@ -39,6 +39,7 @@ uses
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
   function FindParamIndex(Param: string): integer;
+  procedure RemoveReadOnlyFileAttribute(FileName: string);
 
 implementation
 
@@ -334,7 +335,7 @@ begin
 
   {Broken Age types}
   else
-  if FileExt = 'lua' then result:= ft_Other//
+  if FileExt = 'lua' then result:= ft_Lua//
   else
   if FileExt = 'list' then result:= ft_Text//
   else
@@ -356,47 +357,47 @@ begin
   else
   if FileExt = 'fev' then result:= ft_Other//
   else
-  if FileExt = 'dtree' then result:= ft_Other//
+  if FileExt = 'dtree' then result:= ft_Lua//
   else
-  if FileExt = 'envstate' then result:= ft_Other//
+  if FileExt = 'envstate' then result:= ft_Lua//
   else
-  if FileExt = 'inv' then result:= ft_Other//
+  if FileExt = 'inv' then result:= ft_Lua//
   else
-  if FileExt = 'loco' then result:= ft_Other//
+  if FileExt = 'loco' then result:= ft_Lua//
   else
-  if FileExt = 'material' then result:= ft_Other//
+  if FileExt = 'material' then result:= ft_Lua//
   else
-  if FileExt = 'matmod' then result:= ft_Other//
+  if FileExt = 'matmod' then result:= ft_Lua//
   else
-  if FileExt = 'proto' then result:= ft_Other//
+  if FileExt = 'proto' then result:= ft_Lua//
   else
-  if FileExt = 'scene' then result:= ft_Other//
+  if FileExt = 'scene' then result:= ft_Lua//
   else
-  if FileExt = 'stance' then result:= ft_Other//
+  if FileExt = 'stance' then result:= ft_Lua//
   else
   if FileExt = 'brig' then result:= ft_Other//
   else
-  if FileExt = 'rig' then result:= ft_Other//
+  if FileExt = 'rig' then result:= ft_Lua//
   else
   if FileExt = 'tex' then result:= ft_HeaderlessDDSImage//
   else
-  if FileExt = 'anim' then result:= ft_Other//
+  if FileExt = 'anim' then result:= ft_Lua//
   else
   if FileExt = 'banim' then result:= ft_Other//
   else
-  if FileExt = 'particles' then result:= ft_Other//
+  if FileExt = 'particles' then result:= ft_Lua//
   else
-  if FileExt = 'font' then result:= ft_Other//
+  if FileExt = 'font' then result:= ft_Lua//
   else
   if FileExt = 'bsdoc' then result:= ft_Other//
   else
   if FileExt = 'bshd' then result:= ft_Other//
   else
-  if FileExt = 'ctsn' then result:= ft_Other//
+  if FileExt = 'ctsn' then result:= ft_Lua//
   else
   if FileExt = 'canim' then result:= ft_Text//
   else
-  if FileExt = 'caff' then result:= ft_Other//
+  if FileExt = 'caff' then result:= ft_Lua//
 
 
   {Audio}
@@ -573,6 +574,19 @@ begin
       break;
     end;
   end;
+end;
+
+procedure RemoveReadOnlyFileAttribute(FileName: string);
+var
+  Attributes: cardinal;
+begin
+  if FileName = '' then exit;
+
+  Attributes:=FileGetAttr(FileName);
+  if Attributes = INVALID_FILE_ATTRIBUTES then exit;
+
+  if Attributes and faReadOnly = faReadOnly then
+    FileSetAttr(FileName, Attributes xor faReadOnly);
 end;
 
 end.

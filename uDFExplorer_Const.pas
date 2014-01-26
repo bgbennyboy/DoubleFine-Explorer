@@ -27,7 +27,7 @@ interface
 
 const
   strAppName:              string = 'DoubleFine Explorer';
-  strAppVersion:           string = '1.01';
+  strAppVersion:           string = '1.1';
   strAppURL:               string = 'http://quickandeasysoftware.net';
   strCmdLineOpenAndDelete: string = '/OPENFILEANDDELETELATER';
 
@@ -39,6 +39,7 @@ const
   strDumpingAllDDSImages: string = 'Dumping all dds images...';
   strDumpingAllText:      string = 'Dumping all text...';
   strDumpingAllAudio:     string = 'Dumping all audio...';
+  strDumpingAllLua:       string = 'Dumping all lua...WARNING this may take a while (at least 5 minutes to dump all lua files in pdata.pck';
   strDone:                string = '...done!';
   strViewAllFiles:        string = 'View all files';
   strViewSavedGameFiles:  string = 'Saved games';

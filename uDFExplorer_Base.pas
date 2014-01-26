@@ -58,7 +58,7 @@ public
   function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; HeaderlessDDS: boolean = false): boolean;
   function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; HeaderlessDDS: boolean = false): boolean;
   procedure Initialise;
-  procedure SaveFile(FileNo: integer; DestDir, FileName: string);
+  procedure SaveFile(FileNo: integer; DestDir, FileName: string; DoLog: boolean = true);
   procedure SaveFiles(DestDir: string);
   procedure SaveFileToStream(FileNo: integer; DestStream: TStream);
   procedure ReadText(FileIndex: integer; DestStrings: TStrings);
@@ -648,8 +648,11 @@ begin
   end;
 end;
 
-procedure TDFExplorerBase.SaveFile(FileNo: integer; DestDir, FileName: string);
+procedure TDFExplorerBase.SaveFile(FileNo: integer; DestDir, FileName: string; DoLog: boolean = true);
 begin
+  if DoLog then
+    Log(strSavingFile + FileName);
+
   fBundle.SaveFile(FileNo, DestDir, Filename);
 end;
 

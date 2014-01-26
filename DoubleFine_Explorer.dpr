@@ -23,6 +23,10 @@
 
 program DoubleFine_Explorer;
 
+
+
+{$R *.dres}
+
 uses
   Forms,
   frmMain in 'frmMain.pas' {formMain},
