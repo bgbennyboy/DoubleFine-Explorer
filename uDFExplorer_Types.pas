@@ -37,6 +37,7 @@ type
   TFileType = (
     ft_GenericImage,
     ft_DDSImage,
+    ft_HeaderlessDDSImage,
     ft_Text,
     ft_CSVText,
     ft_DelimitedText,

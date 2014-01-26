@@ -449,7 +449,6 @@ end;
 procedure TformMain.EnableDisableButtons_TreeDependant;
 var
   NodeIsSelected: boolean;
-  Ext: string;
 begin
   if Tree.RootNodeCount > 0 then
     btnSaveAllFiles.Enabled:=true
@@ -463,9 +462,8 @@ begin
 
   if NodeIsSelected then
   begin
-    ext:=Uppercase(extractfileext(fExplorer.FileName[Tree.focusednode.Index]));
-    menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage);
-    menuItemDumpDDSImage.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage;
+    menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
+    menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
     menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText);
     menuItemDumpAudio.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_Audio;
   end;
@@ -481,7 +479,6 @@ end;
 procedure TformMain.UpdateSaveAllMenu;
 var
   i: integer;
-  Ext: string;
 begin
   {Parse through all files and enable the appropriate menu if it finds
   corresponding file type}
@@ -497,10 +494,9 @@ begin
 
   for i:=0 to tree.RootNodeCount -1 do
   begin
-    ext:=Uppercase(extractfileext(extractfileext(fExplorer.FileName[i])));
     if fExplorer.FileType[i]  = ft_GenericImage then
       menuItemSaveAllImages.Visible:=true;
-    if fExplorer.FileType[i]  = ft_DDSImage then
+    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) then
     begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
@@ -582,6 +578,12 @@ begin
     fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap);
   end;
 
+  //Headerless DDS images
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_HeaderlessDDSImage then
+  begin
+    panelPreviewImage.BringToFront;
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, true);
+  end;
 
   //Audio types
   if fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio then
@@ -638,15 +640,16 @@ begin
   FileType := fExplorer.FileType[node.Index];
 
   case FileType of
-    ft_GenericImage: ImageIndex:= 8;
-    ft_DDSImage: ImageIndex:= 8;
-    ft_Text:  ImageIndex:= 9;
-    ft_DelimitedText:  ImageIndex:= 14;
-    ft_CSVText:  ImageIndex:= 14;
-    ft_Audio: ImageIndex:= 12;
-    ft_Other: ImageIndex:= 5;
-    ft_Unknown: ImageIndex:=5;
-    ft_FSBFile: ImageIndex:=12
+    ft_GenericImage:        ImageIndex:= 8;
+    ft_DDSImage:            ImageIndex:= 8;
+    ft_HeaderlessDDSImage:  ImageIndex := 8;
+    ft_Text:                ImageIndex:= 9;
+    ft_DelimitedText:       ImageIndex:= 14;
+    ft_CSVText:             ImageIndex:= 14;
+    ft_Audio:               ImageIndex:= 12;
+    ft_Other:               ImageIndex:= 5;
+    ft_Unknown:             ImageIndex:=5;
+    ft_FSBFile:             ImageIndex:=12
   else
     ImageIndex:=5;
   end;
@@ -717,15 +720,16 @@ begin
       tempFileType := GetFileTypeFromFileExtension( FileTypes[i] );
 
       case tempFileType of
-        ft_GenericImage:   MyPopupItems[i].ImageIndex:=8;
-        ft_DDSImage:   MyPopupItems[i].ImageIndex:=8;
-        ft_Text:    MyPopupItems[i].ImageIndex:=9;
-        ft_CSVText:    MyPopupItems[i].ImageIndex:=14;
-        ft_DelimitedText:    MyPopupItems[i].ImageIndex:=14;
-        ft_Audio:  MyPopupItems[i].ImageIndex:=12;
-        ft_Other:   MyPopupItems[i].ImageIndex:=5;
-        ft_Unknown: MyPopupItems[i].ImageIndex:=5;
-        ft_FSBFile: MyPopupItems[i].ImageIndex:=12;
+        ft_GenericImage:        MyPopupItems[i].ImageIndex:=8;
+        ft_DDSImage:            MyPopupItems[i].ImageIndex:=8;
+        ft_HeaderlessDDSImage:  MyPopupItems[i].ImageIndex:=8;
+        ft_Text:                MyPopupItems[i].ImageIndex:=9;
+        ft_CSVText:             MyPopupItems[i].ImageIndex:=14;
+        ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
+        ft_Audio:               MyPopupItems[i].ImageIndex:=12;
+        ft_Other:               MyPopupItems[i].ImageIndex:=5;
+        ft_Unknown:             MyPopupItems[i].ImageIndex:=5;
+        ft_FSBFile:             MyPopupItems[i].ImageIndex:=12;
         else
           MyPopupItems[i].ImageIndex:=5;
       end;
@@ -892,6 +896,11 @@ begin
         DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32)
       end
       else
+      if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, true)
+      end
+      else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage then
         DecodeResult:=fExplorer.DrawImageGeneric(Tree.focusednode.Index, TempBmp32) ;
 
@@ -1043,6 +1052,7 @@ procedure TformMain.menuItemSaveAllDDSImagesClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
   DecodeResult: boolean;
+  Headerless: boolean;
 begin
   if Tree.RootNodeCount=0 then exit;
   if dlgBrowseforSaveFolder.Execute = false then exit;
@@ -1055,18 +1065,21 @@ begin
     TempNode:=Tree.GetFirst;
     while (tempNode <> nil) do
     begin
-      if   fExplorer.FileType[TempNode.Index] <> ft_DDSImage then //not DDS image
-      begin
-        TempNode:=Tree.GetNext(TempNode);
-        continue;
-      end;
+      if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
+        if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then //not DDS image
+        begin
+          TempNode:=Tree.GetNext(TempNode);
+          continue;
+        end;
+
+      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
+        Headerless := true
+      else
+        Headerless := false;
 
       DecodeResult:=false;
-      if fExplorer.FileType[TempNode.Index] = ft_DDSImage then
-      begin
-        ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-        DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'))
-      end;
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), Headerless);
 
       if DecodeResult = false then
       begin
@@ -1111,11 +1124,12 @@ begin
     while (tempNode <> nil) do
     begin
       if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
-        if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
-        begin
-          TempNode:=Tree.GetNext(TempNode);
-          continue;
-        end;
+        if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
+          if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
+          begin
+            TempNode:=Tree.GetNext(TempNode);
+            continue;
+          end;
 
       TempBmp32.Clear;
       TempBmp.Assign(nil);
@@ -1124,6 +1138,11 @@ begin
       if fExplorer.FileType[TempNode.Index] = ft_DDSImage then
       begin
         DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32)
+      end
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, true)
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_GenericImage then
@@ -1254,6 +1273,7 @@ end;
 procedure TformMain.menuItemDumpDDSImageClick(Sender: TObject);
 var
   DecodeResult: boolean;
+  Headerless: boolean;
 begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
@@ -1268,9 +1288,15 @@ begin
   try
     DoLog(strSavingFile + SaveDialog1.FileName);
 
-    if fExplorer.FileType[Tree.focusednode.Index] =ft_DDSImage then
+    if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage then
+      Headerless := true
+    else
+      Headerless := false;
+
+
+    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) then
     begin
-      DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName))
+      DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName), Headerless)
     end
     else
     begin

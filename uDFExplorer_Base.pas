@@ -28,7 +28,7 @@ interface
 uses
   Classes, sysutils, windows, graphics,
 
-  GR32, ImagingComponents, ZlibExGz,
+  GR32, ImagingComponents, ZlibEx,
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager;
@@ -49,12 +49,14 @@ private
   function DrawImage(MemStream: TMemoryStream; OutImage: TBitmap32): boolean;
   procedure Log(Text: string);
   function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
+  function WriteHeaderlessDDSToStream(SourceStream, DestStream: TStream): boolean;
+  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DestStream: TStream);
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
   destructor Destroy; override;
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
-  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32): boolean;
-  function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string): boolean;
+  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; HeaderlessDDS: boolean = false): boolean;
+  function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; HeaderlessDDS: boolean = false): boolean;
   procedure Initialise;
   procedure SaveFile(FileNo: integer; DestDir, FileName: string);
   procedure SaveFiles(DestDir: string);
@@ -277,7 +279,7 @@ begin
 end;
 
 function TDFExplorerBase.DrawImageDDS(FileIndex: integer;
-  DestBitmap: TBitmap32): boolean;
+  DestBitmap: TBitmap32; HeaderlessDDS: boolean = false): boolean;
 var
   TempStream, DDSStream: TExplorerMemoryStream;
 begin
@@ -290,7 +292,10 @@ begin
 
     DDSStream:=TExplorerMemoryStream.Create;
     try
-      WriteDDSToStream(Tempstream, DDSStream);
+      if HeaderlessDDS then
+        WriteHeaderlessDDSToStream(Tempstream, DDSStream)
+      else
+        WriteDDSToStream(Tempstream, DDSStream);
 
       DestBitmap.Clear();
       destbitmap.CombineMode:=cmBlend;
@@ -349,6 +354,199 @@ begin
   end;
 
   //DestStream.SaveToFile('C:\Users\Ben\Desktop\test.dds');
+end;
+
+function TDFExplorerBase.WriteHeaderlessDDSToStream(SourceStream,
+  DestStream: TStream): boolean;
+var
+  TempInt,  FirstCompChunkSize, FirstChunkDecompressedSize, SecondChunkCompSize, SecondChunkDecompressedSize: integer;
+  Width, Height: word;
+  TempStream: TMemoryStream;
+begin
+{
+  4 bytes "TEX "
+  2 bytes Width
+  2 bytes Height
+  4 bytes Unknown
+  4 bytes Compressed size of 1st image
+  4 bytes Uncompressed size of 1st image
+  4 bytes Compressed size of 2nd image
+  4 bytes Uncompressed size of 2nd image
+  4 bytes Unknown
+  x bytes 1st compressed image
+  x bytes 2nd compressed image
+
+  File has a 32 byte header then (usually) 2 zlib compressed images.
+  1st image is a smaller version of the second image (mipmap?) - its half the size anyway.
+  There isn't always a second image. If this is the case then the first image is used but the width and height need halving since the width and height in the header apply to the second image.
+  Sometimes the second image has a mipmap as part of the data.
+  A few files arent compressed. They have no first image and an uncompressed second image.
+}
+
+  result := false;
+  SourceStream.Position := 0;
+  SourceStream.Read(TempInt, 4);
+  if TempInt <> 542655828 then //'TEX ' header
+  begin
+    Log('Couldnt find TEX identifier in headerless dds!');
+    exit;
+  end;
+
+  SourceStream.Read(Width, 2);
+  SourceStream.Read(Height, 2);
+  SourceStream.Seek(4, soFromCurrent); //Unknown
+  SourceStream.Read(FirstCompChunkSize, 4);
+  SourceStream.Read(FirstChunkDecompressedSize, 4);
+  SourceStream.Read(SecondChunkCompSize, 4);
+  SourceStream.Read(SecondChunkDecompressedSize, 4);
+  SourceStream.Seek(4, soFromCurrent); //Unknown
+
+  //Some files dont have a second compressed image
+  if SecondChunkCompSize = 0 then //Decompress the first image instead
+  begin
+    if Width * Height > FirstChunkDecompressedSize then //correct the dimensions
+    begin
+      Width := Width div 2;
+      Height := Height div 2;
+    end;
+  end
+  else //seek to the second compressed image
+    SourceStream.Seek(FirstCompChunkSize, soFromCurrent);
+
+
+  TempStream := TMemoryStream.Create;
+  try
+    //Have to decompress the stream first - we need to know the size of the data to be able to write the DDS header
+    try
+      if (SecondChunkCompSize > 0) and (SecondChunkCompSize = SecondChunkDecompressedSize) then //Not compressed
+        TempStream.CopyFrom(SourceStream, SourceStream.Size - SourceStream.Position)
+      else
+        ZDecompressStream2(SourceStream, TempStream, -15);
+    except on EZDecompressionError do
+      begin
+        Log('Decompression failed in headerless DDS.');
+        exit;
+      end;
+    end;
+
+    if SecondChunkCompSize = 0 then
+      if FirstChunkDecompressedSize <>  TempStream.Size then
+        Log('Decompressed size mismatch!');
+
+
+    //Correct for images with mipmaps - remove them - they sometimes crash the internal dds reader
+    if TempStream.Size > (Width * Height) then //DXT5 with mipmap
+      Tempstream.Size := (Width * Height);
+
+    if TempStream.Size < (Width * Height) then //DXT1 with mipmap
+      TempStream.Size := ((Width * Height) div 2);
+
+    AddDDSHeaderToStream(Width, Height, TempStream.Size, DestStream);
+    TempStream.Position := 0;
+    DestStream.CopyFrom(TempStream, TempStream.Size);
+    Result := true;
+  finally
+    TempStream.Free;
+  end;
+
+end;
+
+procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer;
+  DestStream: TStream);
+const
+  DDSD_CAPS =                       $00000001;
+  DDSD_HEIGHT =                     $00000002;
+  DDSD_WIDTH =                      $00000004;
+  DDSD_PITCH =                      $00000008;
+  DDSD_PIXELFORMAT =                $00001000;
+  DDSD_MIPMAPCOUNT =                $00020000;
+  DDSD_LINEARSIZE =                 $00080000;
+  DDSD_DEPTH =                      $00800000;
+  DDPF_ALPHAPIXELS =                $00000001;
+  DDPF_FOURCC =                     $00000004;
+  DDPF_RGB =                        $00000040;
+  DDSCAPS_COMPLEX =                 $00000008;
+  DDSCAPS_TEXTURE =                 $00001000;
+  DDSCAPS_MIPMAP =                  $00400000;
+  DDSCAPS2_CUBEMAP =                $00000200;
+  DDSCAPS2_CUBEMAP_POSITIVEX =      $00000400;
+  DDSCAPS2_CUBEMAP_NEGATIVEX =      $00000800;
+  DDSCAPS2_CUBEMAP_POSITIVEY =      $00001000;
+  DDSCAPS2_CUBEMAP_NEGATIVEY =      $00002000;
+  DDSCAPS2_CUBEMAP_POSITIVEZ =      $00004000;
+  DDSCAPS2_CUBEMAP_NEGATIVEZ =      $00008000;
+  DDSCAPS2_VOLUME =                 $00200000;
+  DDSMAGIC = 542327876; //'DDS '
+type
+  TDDPIXELFORMAT = record
+    dwSize,
+    dwFlags,
+    dwFourCC,
+    dwRGBBitCount,
+    dwRBitMask,
+    dwGBitMask,
+    dwBBitMask,
+    dwRGBAlphaBitMask : Cardinal;
+  end;
+
+  TDDCAPS2 = record
+    dwCaps1,
+    dwCaps2 : Cardinal;
+    Reserved : array[0..1] of Cardinal;
+  end;
+
+  TDDSURFACEDESC2 = record
+    dwSize,
+    dwFlags,
+    dwHeight,
+    dwWidth,
+    dwPitchOrLinearSize,
+    dwDepth,
+    dwMipMapCount : Cardinal;
+    dwReserved1 : array[0..10] of Cardinal;
+    ddpfPixelFormat : TDDPIXELFORMAT;
+    ddsCaps : TDDCAPS2;
+    dwReserved2 : Cardinal;
+  end;
+
+  TDDSHeader = record
+    Magic : Cardinal;
+    SurfaceFormat : TDDSURFACEDESC2;
+  end;
+
+var
+  Header : TDDSHeader;
+  TempFourCC: Cardinal;
+begin
+  FillChar(header, SizeOf(TDDSHeader), 0);
+  Header.magic := DDSMAGIC;
+  Header.SurfaceFormat.dwSize := 124;
+  Header.SurfaceFormat.dwFlags := DDSD_CAPS or DDSD_HEIGHT or DDSD_WIDTH or DDSD_PIXELFORMAT or DDSD_LINEARSIZE;
+  Header.SurfaceFormat.dwHeight := Height;
+  Header.SurfaceFormat.dwWidth := Width;
+
+  Header.SurfaceFormat.dwMipMapCount := 1;
+
+  //Check for mipmaps
+  {if Datasize > (Width * Height) then
+    if (Width * Height) + ( (Width * Height) div 2)  = Datasize then
+        Header.SurfaceFormat.dwMipMapCount := 2;}
+
+  Header.SurfaceFormat.dwDepth := 1;
+  Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
+  Header.SurfaceFormat.ddpfPixelFormat.dwSize := 32;
+  Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC; // or DDPF_ALPHAPIXELS;
+  //Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;
+
+  if Datasize < ((Width * Height)) then
+    TempFourCC := 827611204 //DXT1
+  else
+    TempFourCC := 894720068; //DXT5
+
+  Header.SurfaceFormat.ddpfPixelFormat.dwFourCC :=  TempFourCC;
+  Header.SurfaceFormat.ddsCaps.dwCaps1 := DDSCAPS_TEXTURE;
+  DestStream.Position := 0;
+  DestStream.Write(header, SizeOf(TDDSHeader));
 end;
 
 function TDFExplorerBase.DrawImageGeneric(FileIndex: integer;
@@ -417,7 +615,7 @@ end;
 
 
 function TDFExplorerBase.SaveDDSToFile(FileIndex: integer; DestDir,
-  FileName: string): boolean;
+  FileName: string; HeaderlessDDS: boolean = false): boolean;
 var
   TempStream: TExplorerMemoryStream;
   SaveFile: TFileStream;
@@ -438,7 +636,10 @@ begin
 
     SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
     try
-      Result := WriteDDSToStream(Tempstream, SaveFile);
+      if HeaderlessDDS then
+        Result := WriteHeaderlessDDSToStream(Tempstream, SaveFile)
+      else
+        Result := WriteDDSToStream(Tempstream, SaveFile);
     finally
       SaveFile.Free;
     end;

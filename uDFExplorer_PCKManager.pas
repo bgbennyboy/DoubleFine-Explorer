@@ -252,6 +252,10 @@ begin
     begin
       Log('Compressed and uncompressed size differ - check compression. File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
     end;
+    if CompressionMethod <> 0 then
+    begin
+      Log('Compressed method not 0!. File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
+    end;
     if FilenameLength <> 0 then
     begin
       Log('Filename length <> 0! File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
@@ -415,6 +419,17 @@ begin
   Ext:=Uppercase(ExtractFileExt(TDFFile(BundleFiles.Items[FileNo]).FileName));
 
   fBundle.Seek(TDFFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
+
+  //TEMPORARY HACK FOR DECOMPRESSING TEX TEXTURES*************************************************************************
+  {if TDFFile(BundleFiles.Items[FileNo]).FileExtension = 'tex' then
+  begin
+    TDFFile(BundleFiles.Items[FileNo]).Compressed := true;
+    fBundle.Seek(16, soFromCurrent);
+    TDFFile(BundleFiles.Items[FileNo]).UncompressedSize := fBundle.ReadDWord;
+    fBundle.Seek(12, soFromCurrent);
+  end;}
+  //***********************************************************************************************************************
+
 
   //if TDFFile(BundleFiles.Items[FileNo]).UncompressedSize <> TDFFile(BundleFiles.Items[FileNo]).Size then
   if TDFFile(BundleFiles.Items[FileNo]).Compressed then

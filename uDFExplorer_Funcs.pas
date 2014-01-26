@@ -378,7 +378,7 @@ begin
   else
   if FileExt = 'rig' then result:= ft_Other//
   else
-  if FileExt = 'tex' then result:= ft_Other//
+  if FileExt = 'tex' then result:= ft_HeaderlessDDSImage//
   else
   if FileExt = 'anim' then result:= ft_Other//
   else
