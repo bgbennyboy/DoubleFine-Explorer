@@ -1,7 +1,7 @@
 {
 ******************************************************
   DoubleFine Explorer
-  Copyright (c) 2013 Bennyboy
+  Copyright (c) 2014 Bennyboy
   Http://quickandeasysoftware.net
 ******************************************************
 }
@@ -24,6 +24,7 @@
 TODO
 Iron Brigade + UI.fsb in The Cave - still some sounds not working - different codec? Looks like FSB says mp3/wav but actually another codec
 Filter by actual file extension no rather than type? Eg where type is blob but there's different extensions within that like lua, csv etc
+Use generic types for files rather than file extensions eg ImageFileTypes
 }
 
 unit frmMain;
@@ -209,13 +210,13 @@ begin
 	// check the correct BASS dll was loaded
 	if (HIWORD(BASS_GetVersion) <> BASSVERSION) then
 	begin
-		MessageBox(0, 'An incorrect version of BASS.DLL was loaded', nil, MB_ICONERROR);
+		MessageBox(0, PChar(strIncorrectBASSVersion), nil, MB_ICONERROR);
 		Halt;
 	end;
 
 	// Initialize audio - default device, 44100hz, stereo, 16 bits
 	if not BASS_Init(-1, 44100, 0, Handle, nil) then
-		MessageBox(0, 'Error initializing audio!', nil, MB_ICONERROR);
+		MessageBox(0, PChar(strErrorInitializingAudio), nil, MB_ICONERROR);
 
   //Look for ini file and path to hex editor
   CheckIniForHexEditor;
@@ -1583,7 +1584,7 @@ begin
 
   if fExplorer.FileType[Tree.focusednode.Index] <> ft_Audio then
   begin
-    DoLog('File not recognised audio type');
+    DoLog(strErrorUnrecognisedAudioType);
     exit;
   end;
 
@@ -1607,7 +1608,7 @@ begin
 
 	if not BASS_ChannelPlay(fAudioHandle, True) then
     begin
-		DoLog('Error playing stream! Error code:' + inttostr(BASS_ErrorGetCode));
+		DoLog(strErrorPlayingStreamCode + inttostr(BASS_ErrorGetCode));
 		Exit;
     end;
 
@@ -1717,7 +1718,7 @@ begin
   Result := '';
   if (FileNo < 0) or (FileNo > Tree.RootNodeCount) then
   begin
-    DoLog('Invalid file number! Lua decompile failed.');
+    DoLog(strErrorInvalidFileNoLuaDec);
     exit;
   end;
 

@@ -1,7 +1,7 @@
 {
 ******************************************************
   DoubleFine Explorer
-  Copyright (c) 2013 Bennyboy
+  Copyright (c) 2014 Bennyboy
   Http://quickandeasysoftware.net
 ******************************************************
 }
@@ -378,6 +378,7 @@ begin
 
   File has a 32 byte header then (usually) 2 zlib compressed images.
   1st image is a smaller version of the second image (mipmap?) - its half the size anyway.
+
   There isn't always a second image. If this is the case then the first image is used but the width and height need halving since the width and height in the header apply to the second image.
   Sometimes the second image has a mipmap as part of the data.
   A few files arent compressed. They have no first image and an uncompressed second image.

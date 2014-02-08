@@ -1,7 +1,7 @@
 {
 ******************************************************
   DoubleFine Explorer
-  Copyright (c) 2013 Bennyboy
+  Copyright (c) 2014 Bennyboy
   Http://quickandeasysoftware.net
 ******************************************************
 }

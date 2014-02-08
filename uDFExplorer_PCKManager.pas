@@ -1,7 +1,7 @@
 {
 ******************************************************
   DoubleFine Explorer
-  Copyright (c) 2013 Bennyboy
+  Copyright (c) 2014 Bennyboy
   Http://quickandeasysoftware.net
 ******************************************************
 }
@@ -30,7 +30,6 @@ uses
   uDFExplorer_BaseBundleManager, uFileReader, uMemReader, uDFExplorer_Types,
   uDFExplorer_Funcs, uZlib;
 
-//https://github.com/moai/moai-dev/blob/master/src/zl-util/ZLZipFile.cpp
 type
   TPCKManager = class (TBundleManager)
   private
@@ -180,177 +179,179 @@ begin
 end;
 
 procedure TPCKManager.ParseFiles;
-var
-  Version: integer;
 begin
  if fBigEndian then //All LE reading auto converted to BE
     Log('Detected as : big endian');
 
 
   ParsePCKBundle;
-
 end;
+
+{
+PCK File Format:
+File data with headers
+File records
+Footer - with file info
+
+Footer at end of file
+The last 22 bytes of the file
+
+4 'PACK'
+4 0?
+2 num files
+2 num files again?
+4 size of file records section
+4 offset of file records section
+2 0?
+
+File data for each file
+
+local file header signature		4 bytes ( 0x04034b50 )
+version needed to extract			2 bytes
+general purpose bit flag			2 bytes
+compression method				2 bytes
+last mod file time				2 bytes
+last mod file date				2 bytes
+crc-32							4 bytes
+compressed size					4 bytes
+uncompressed size					4 bytes
+file name length					2 bytes
+extra field length				2 bytes
+file name							( variable size )
+extra field						( variable size )
+compressed bytes					( variable size )
+
+
+File records section
+
+4 0x04030102
+2 version needed to extract
+2 version needed to extract	(again?)
+2 general purpose bit flag
+2 compression method
+2	last mod file time
+2	last mod file date
+4 CRC32
+4 compressed size
+4 uncompressed size
+4 filename length
+10 unknown
+4 offset of file data - 1st byte of this dword is xorval for some filenames
+x filename
+}
+
 
 procedure TPCKManager.ParsePCKBundle;
 var
+  NumFiles, FileRecordsOffset, CompressedSize, UnCompressedSize, FilenameLength,
+  ExtraFieldLength, FileDataOffset, I, J, OldPosition: integer;
+  XORval: byte;
+  FileName, FileExt: string;
+  FileType: TFileType;
   FileObject: TDFFile;
-
-  NumFiles, Header, Crc32, CompressedSize, UncompressedSize, SigOrCRC: integer;
-  BitFlag, CompressionMethod, FilenameLength, ExtraFieldLength: integer;
-  KeepReading: boolean;
-  I, J, XORVal: Integer;
-  TempStr: string;
 const
-  StandardHeader: integer = 67305985; //0x01020304
+  FileDataHeader: integer = 67305985; //0x01020304
   FileRecordsHeader: integer = 33620740; //0x04030102
-  const BIT_HAS_DESCRIPTOR	= 1 shl $03;
 begin
-	//local file header signature		4 bytes ( 0x04034b50 )
-	//version needed to extract			2 bytes
-	//general purpose bit flag			2 bytes
-	//compression method				2 bytes
-	//last mod file time				2 bytes
-	//last mod file date				2 bytes
-	//crc-32							4 bytes
-	//compressed size					4 bytes
-	//uncompressed size					4 bytes
-	//file name length					2 bytes
-	//extra field length				2 bytes
-	//file name							( variable size )
-	//extra field						( variable size )
+{********************************Footer section********************************}
+  fBundle.Position := fBundle.Size - 22;
 
-	//compressed bytes					( variable size )
-
-  //Contains sequence of Files then the last section is the file records section
-  fBundle.Position := 0;
-  NumFiles := 0;
-  KeepReading := true;
-  Header := 0;
-
-  while KeepReading = true do
+  if fBundle.ReadBlockName <> 'PACK' then
   begin
-    Header := fBundle.ReadDWord; //header
-    if Header <> StandardHeader then
-    begin
-      if Header <> FileRecordsHeader then //Dont alert if its just the start of the records section
-        Log('Unknown file header ' + inttostr(Header) + ' at offset ' + inttostr(fBundle.position - 4));
+    Log('Footer BLOCK not found!');
+    raise EInvalidFile.Create( strErrInvalidFile );
+  end;
 
-      break;
+  fBundle.Seek(4, soFromCurrent); //4 0 bytes
+  NumFiles := fBundle.ReadWord;
+  fBundle.Seek(6, soFromCurrent); //numfiles again and size of file records
+  FileRecordsOffset := fBundle.ReadDWord;
+
+
+{*****************************File Records section*****************************}
+  fBundle.Seek(FileRecordsOffset, soFromBeginning);
+  for I := 0 to NumFiles - 1 do
+  begin
+    if fBundle.ReadDWord <> FileRecordsHeader then
+    begin
+      Log('File records header expected but not found!');
+      raise EInvalidFile.Create( strErrInvalidFile );
     end;
 
-    fBundle.Seek(2, soFromCurrent); //version needed to extract
-    BitFlag := fBundle.ReadWord;
-    CompressionMethod := fBundle.ReadWord;
-    fBundle.Seek(4, soFromCurrent); //last mod file and date
-    Crc32 := fBundle.ReadDWord;
+    fBundle.Seek(16, soFromCurrent); //Info that we dont need to dump files
     CompressedSize := fBundle.ReadDWord;
-    UncompressedSize := fBundle.ReadDWord;
-    FilenameLength := fBundle.ReadWord;
-    ExtraFieldLength := fBundle.ReadWord;
+    UnCompressedSize := fBundle.ReadDWord;
 
     if CompressedSize <> UncompressedSize then
+      Log('Compressed and uncompressed size differ - check compression. File no ' + inttostr(i) + ' at offset ' + inttostr(fBundle.Position - 22));
+
+    FilenameLength := fBundle.ReadDWord;
+    fBundle.Seek(10, soFromCurrent); //Unknown
+    FileDataOffset := fBundle.ReadDWord;
+
+    //Filename is xor'ed by first byte of the offset dword
+    XORVal := FileDataOffset AND $FF; //get first byte of the dword;
+
+    if XORVal > 128 then //Values under 128 are just xor'ed by 128
+    else
+      XORVal := 128;
+
+    //Decode the filename
+    FileName := PChar(fBundle.ReadString(FilenameLength));
+    for J := 1 to Length(FileName) do
     begin
-      Log('Compressed and uncompressed size differ - check compression. File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
-    end;
-    if CompressionMethod <> 0 then
-    begin
-      Log('Compressed method not 0!. File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
-    end;
-    if FilenameLength <> 0 then
-    begin
-      Log('Filename length <> 0! File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
-      fBundle.Seek(FilenameLength, soFromCurrent);
-    end;
-    if ExtraFieldLength <> 0 then
-    begin
-      Log('ExtraField length <> 0! File no ' + inttostr(NumFiles) + ' at offset ' + inttostr(fBundle.Position - 30));
-      fBundle.Seek(ExtraFieldLength, soFromCurrent);
+      FileName[J] := Chr( ord(FileName[J]) xor XORVal);
     end;
 
+
+    //Correct the file extension
+    FileExt := ExtractFileExt(FileName); //Dont want the . on the file extension
+    if (length(FileExt)>0) and (FileExt[1]='.') then
+      delete(FileExt,1,1);
+
+
+    //Correct the file type
+    FileType := GetFileTypeFromFileExtension( FileExt, Uppercase(ExtractFileExt(Filename)));
+    if (FileType = ft_Unknown) and (ExtractFileExt(FileName) <> '') then
+      Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
+
+
+    //Parse the file data to get the actual offset of the data - the size of the header for each file is variable
+    OldPosition := fBundle.Position;
+    fBundle.Position := FileDataOffset;
+    if fBundle.ReadDWord <> FileDataHeader then
+    begin
+      Log('File data header expected but not found!');
+      raise EInvalidFile.Create( strErrInvalidFile );
+    end;
+    fBundle.Seek(22, soFromCurrent);
+    FilenameLength := fBundle.ReadWord;
+    ExtraFieldLength := fBundle.ReadWord;
+    fBundle.Seek(FilenameLength, soFromCurrent);
+    fBundle.Seek(ExtraFieldLength, soFromCurrent);
+    FileDataOffset := fBundle.Position; //Correct the offset
+    fBundle.Position := OldPosition;
+
+
+    //Add a new FileObject
     FileObject := TDFFile.Create;
     FileObject.UncompressedSize := UncompressedSize;
-    FileObject.NameOffset := -1;
-    FileObject.Offset := fBundle.Position;
+    FileObject.Offset := FileDataOffset;
     FileObject.Size := CompressedSize;
-    FileObject.FileTypeIndex := -1;
-    FileObject.CompressionType := CompressionMethod;
     FileObject.Compressed := CompressedSize <> UncompressedSize;
-    FileObject.FileExtension := '';
-    FileObject.FileName := inttostr(NumFiles + 1);
-    FileObject.FileType := ft_Unknown;
+    FileObject.FileExtension := FileExt;
+    FileObject.FileType := FileType;
+    FileObject.FileName := FileName;
+    FileObject.FileTypeIndex := -1;
+    FileObject.CompressionType := 0;
+    FileObject.NameOffset := -1;
 
     BundleFiles.Add(FileObject);
-    inc(NumFiles);
-    fBundle.Seek(CompressedSize, soFromCurrent);
-
-    if BitFlag  and BIT_HAS_DESCRIPTOR <> 0 then
-    begin
-      SigOrCRC := fBundle.ReadDWord;
-      //Crc32
-      if SigOrCRC = StandardHeader then
-        Crc32 := fBundle.ReadDWord
-      else
-        Crc32 := SigOrCRC;
-
-      fBundle.Seek(8, soFromCurrent); //compressed and uncompressed size again?
-    end;
   end;
-
-  //Now there should be the file records section
-  if Header <> FileRecordsHeader then
-    Log('File records header expected but not found!')
-  else
-  begin
-    //Seek back 4 bytes - so we are at the start of the header again
-    fBundle.Seek(-4, soFromCurrent);
-
-    //Parse file records
-    for I := 0 to NumFiles- 1 do
-    begin
-      Header := fBundle.ReadDWord; //header
-      if Header <> FileRecordsHeader then
-          Log('Unknown file header ' + inttostr(Header) + ' at offset ' + inttostr(fBundle.position - 4));
-
-      fBundle.Seek(24, soFromCurrent); //24 bytes mostly the same as the information thats already with the file crc,date, size, compressed size etc
-      FilenameLength := fBundle.ReadDWord;
-      fBundle.Seek(10, soFromCurrent); //Unknown
-      XORVal := fBundle.ReadByte;
-      fBundle.Seek(3, soFromCurrent); //Unknown
-
-      //Its 128 for many files but for others they use the xorval
-      if XORVal > 128 then
-      else
-        XORVal := 128; //$80
-
-       //TDFFile(BundleFiles[i]).Offset := fBundle.Position;
-
-      //Read the filename and decrypt it
-      TempStr := PChar(fBundle.ReadString(FilenameLength));
-      for J := 1 to Length(TempStr) do
-        TempStr[J] := Chr( ord(TempStr[J]) xor XORVal);
-
-      TDFFile(BundleFiles[i]).FileName := TempStr;
-
-      //Now correct the file extension and file type in the record
-      Tempstr := ExtractFileExt(TDFFile(BundleFiles[i]).FileName); //Dont want the . on the file extension
-      if (length(Tempstr)>0) and (Tempstr[1]='.') then
-        delete(Tempstr,1,1);
-      TDFFile(BundleFiles[i]).FileExtension := TempStr;
-
-      //Add file type
-      TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension( TDFFile(BundleFiles[i]).FileExtension, Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
-      if (TDFFile(BundleFiles[i]).FileType = ft_Unknown) and (ExtractFileExt(TDFFile(BundleFiles[i]).FileName) <> '') then
-        Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
-
-    end;
-  end;
-
 
   if (Assigned(FOnDoneLoading)) then
 	  FOnDoneLoading(NumFiles);
-
 end;
-
 
 procedure TPCKManager.SaveFile(FileNo: integer; DestDir, FileName: string);
 var
