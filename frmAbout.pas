@@ -58,7 +58,8 @@ procedure TAboutfrm.FormCreate(Sender: TObject);
 begin
   //Add the version to the scrolling text
   JVScrollText1.Items.Strings[2]:='Version ' + strAppVersion;
-
+  //Add a huge empty string to force scrolltext to align properly
+  JVScrollText1.Items.Add('                                                                                                                               ');
   JVScrollText1.Font.Color:=clWhite;
   JVScrollText1.Font.Size:=14;
 

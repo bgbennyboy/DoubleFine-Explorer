@@ -31,7 +31,8 @@ uses
   GR32, ImagingComponents, ZlibEx,
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
-  uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager;
+  uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
+  uDFExplorer_PKGManager, uDFExplorer_PPAKManager;
 
 type
   TDFExplorerBase = class
@@ -89,6 +90,12 @@ begin
     if Uppercase( ExtractFileExt(BundleFile) ) = '.PCK' then
       fBundle:=TPCKManager.Create(BundleFile)
     else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.PKG' then
+      fBundle:=TPKGManager.Create(BundleFile)
+    else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.PPF' then
+      fBundle:=TPPAKManager.Create(BundleFile)
+    else
       fBundle:=TPAKManager.Create(BundleFile);
   except on E: EInvalidFile do
     raise;
@@ -129,6 +136,14 @@ begin
     fBundle.SaveFileToStream(Fileindex, TempStream);
     TextLen := TempStream.ReadDWord;
     Sourcestr :='';
+
+    //Costume Quest 2 doesnt have the 4 byte length and '1' string value.
+    if TextLen <> TempStream.Size - TempStream.Position then
+    begin
+      TempStream.Position := 0;
+      TextLen := TempStream.Size;
+    end;
+
     SourceStr := TempStream.ReadAnsiString(TextLen);
 
     IndentLevel := 0;
@@ -316,42 +331,35 @@ begin
 end;
 
 function TDFExplorerBase.WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
+const
+  DDSMagic: cardinal = 542327876; //542327876 = 'DDS '
+  SearchOffsets: array [0..5] of integer = (0, 36, 40, 68, 144, 180);
 var
-  DDSnum: dword;  //542327876 = 'DDS '
+  DDSnum: cardinal;
+  FoundPos, i: integer;
 begin
   result := false;
-  SourceStream.Position := 40;
-  SourceStream.Read(DDSnum, 4);
-  if DDSnum = 542327876 then
+  FoundPos := -1;
+
+  for I := 0 to High(SearchOffsets) do
   begin
-    SourceStream.Seek(-4, soFromCurrent);
+    SourceStream.Position := SearchOffsets[i];
+    SourceStream.Read(DDSnum, 4);
+    if DDSnum = DDSMagic then
+    begin
+      FoundPos := SourceStream.Position - 4;
+      break;
+    end;
+  end;
+
+  if FoundPos > -1 then
+  begin
+    SourceStream.Seek(FoundPos, soFromBeginning);
     DestStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
     result := true;
   end
   else
-  begin
-    SourceStream.Position := 68;
-    SourceStream.Read(DDSnum, 4);
-    if DDSnum = 542327876 then
-    begin
-      SourceStream.Seek(-4, soFromCurrent);
-      DestStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
-      result := true;
-    end
-    else
-    begin
-      SourceStream.Position := 180;
-      SourceStream.Read(DDSnum, 4);
-      if DDSnum = 542327876 then
-      begin
-        SourceStream.Seek(-4, soFromCurrent);
-        DestStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
-        result := true;
-      end
-      else
-        Log('DDS decode failed! Couldnt find identifier!');
-    end;
-  end;
+    Log('DDS decode failed! Couldnt find identifier!');
 
   //DestStream.SaveToFile('C:\Users\Ben\Desktop\test.dds');
 end;

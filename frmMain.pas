@@ -39,7 +39,7 @@ uses
 
   GR32_Image, pngimage, gr32, VirtualTrees,
 
-  AdvMenus, AdvMenuStylers, AdvGlowButton,
+  AdvGlowButton,
 
   JCLSysInfo, JCLStrings, JCLShell, JCLFileUtils, bass,
 
@@ -70,19 +70,18 @@ type
     memoLog: TJvRichEdit;
     SaveDialog1: TSaveDialog;
     dlgBrowseForSaveFolder: TJvBrowseForFolderDialog;
-    AdvMenuOfficeStyler1: TAdvMenuOfficeStyler;
-    PopupFileTypes: TAdvPopupMenu;
-    popupOpen: TAdvPopupMenu;
+    PopupFileTypes: TPopupMenu;
+    popupOpen: TPopupMenu;
     MenuItemOpenFolder: TMenuItem;
     N2: TMenuItem;
     MenuItemOpenCave: TMenuItem;
-    popupSave: TAdvPopupMenu;
+    popupSave: TPopupMenu;
     menuItemDumpFile: TMenuItem;
     menuItemDumpImage: TMenuItem;
     menuItemDumpDDSImage: TMenuItem;
     menuItemDumpText: TMenuItem;
     menuItemDumpAudio: TMenuItem;
-    popupSaveAll: TAdvPopupMenu;
+    popupSaveAll: TPopupMenu;
     menuItemSaveAllRaw: TMenuItem;
     menuItemSaveAllImages: TMenuItem;
     menuItemSaveAllDDSImages: TMenuItem;
@@ -105,6 +104,7 @@ type
     MenuItemOpenBrokenAge: TMenuItem;
     menuItemSaveAllLua: TMenuItem;
     menuItemDumpLua: TMenuItem;
+    MenuItemOpenCostumeQuest2: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -867,6 +867,9 @@ begin
   if SenderName = 'MenuItemOpenCostumeQuest' then
     OpenDialog1.InitialDir:=GetCostumeQuestPath
   else
+  if SenderName = 'MenuItemOpenCostumeQuest2' then
+    OpenDialog1.InitialDir:=GetCostumeQuest2Path
+  else
   if SenderName = 'MenuItemOpenIronBrigade' then
     OpenDialog1.InitialDir:=GetIronBrigadePath
   else
@@ -1330,10 +1333,11 @@ begin
     begin
       if fExplorer.FileType[TempNode.Index] <> ft_Text then
         if fExplorer.FileType[TempNode.Index] <> ft_DelimitedText then
-        begin
-          TempNode:=Tree.GetNext(TempNode);
-          continue;
-        end;
+          if fExplorer.FileType[TempNode.Index] <> ft_CSVText then
+          begin
+            TempNode:=Tree.GetNext(TempNode);
+            continue;
+          end;
 
       TempStrings.Clear;
 

@@ -33,6 +33,7 @@ uses
   function GetStackingPath: string;
   function GetIronBrigadePath: string;
   function GetCostumeQuestPath: string;
+  function GetCostumeQuest2Path: string;
   function GetBrutalLegendPath: string;
   function GetBrokenAgePath: string;
   function SanitiseFileName(FileName: string): string;
@@ -406,6 +407,51 @@ begin
   else
   if FileExt = '.WAV' then result:= ft_Audio //
 
+  {Psychonauts types}
+  else
+  if FileExt = '.vsh' then result:= ft_Text
+  else
+  if FileExt = '.h' then result:= ft_Text
+  else
+  if FileExt = '.psh' then result:= ft_Text
+  else
+  if FileExt = '.plb' then result:= ft_Other
+  else
+  if FileExt = '.pba' then result:= ft_Other
+  else
+  if FileExt = '.lua' then result:= ft_Other
+  else
+  if FileExt = '.lpf' then result:= ft_Other
+  else
+  if FileExt = '.jan' then result:= ft_Other
+  else
+  if FileExt = '.ini' then result:= ft_Text
+  else
+  if FileExt = '.hlps' then result:= ft_Text
+  else
+  if FileExt = '.eve' then result:= ft_Other
+  else
+  if FileExt = '.dfs' then result:= ft_Text
+  else
+  if FileExt = '.dds' then result:= ft_DDSImage
+  else
+  if FileExt = '.cam' then result:= ft_Other
+  else
+  if FileExt = '.atx' then result:= ft_Text
+  else
+  if FileExt = '.asd' then result:= ft_Text
+
+  {Costume Quest 2 types}
+  else
+  if FileExt = 'MeshEventData' then result:= ft_DelimitedText
+  else
+  if FileExt = 'MonsterEncounterTable' then result:= ft_DelimitedText
+  else
+  if FileExt = 'MonsterRewardTable' then result:= ft_DelimitedText
+  else
+  if FileExt = 'EncounterGroupAliasTable' then result:= ft_DelimitedText
+  else
+  if FileExt = 'RichPresenceData' then result:= ft_DelimitedText
 
   else
   begin
@@ -482,6 +528,22 @@ end;
 function GetCostumeQuestPath: string;
 const
   ExtraPath: string = 'steamapps\Common\costume quest\Win\';
+var
+  Temp: string;
+begin
+  Result := '';
+  try
+    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    result:=Temp + ExtraPath;
+    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
+  except on EJCLRegistryError do
+    result:='';
+  end;
+end;
+
+function GetCostumeQuest2Path: string;
+const
+  ExtraPath: string = 'steamapps\Common\CostumeQuest2\Win\';
 var
   Temp: string;
 begin

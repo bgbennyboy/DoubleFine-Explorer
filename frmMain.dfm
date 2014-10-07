@@ -30,7 +30,7 @@ object formMain: TformMain
       862
       55)
     object btnAbout: TAdvGlowButton
-      Left = 330
+      Left = 327
       Top = 0
       Width = 82
       Height = 55
@@ -300,35 +300,37 @@ object formMain: TformMain
       Transparent = True
       TabOrder = 0
       OnClick = btnAboutClick
-      Appearance.BorderColor = 13421257
-      Appearance.BorderColorHot = 10079963
-      Appearance.BorderColorDown = 4548219
-      Appearance.BorderColorChecked = 4548219
-      Appearance.Color = 15987697
-      Appearance.ColorTo = 16119283
-      Appearance.ColorChecked = 11918331
-      Appearance.ColorCheckedTo = 7915518
-      Appearance.ColorDisabled = 15921906
-      Appearance.ColorDisabledTo = 15921906
-      Appearance.ColorDown = 7778289
-      Appearance.ColorDownTo = 4296947
-      Appearance.ColorHot = 15465983
-      Appearance.ColorHotTo = 11332863
-      Appearance.ColorMirror = 15657703
-      Appearance.ColorMirrorTo = 16316406
-      Appearance.ColorMirrorHot = 5888767
-      Appearance.ColorMirrorHotTo = 10807807
-      Appearance.ColorMirrorDown = 946929
-      Appearance.ColorMirrorDownTo = 5021693
-      Appearance.ColorMirrorChecked = 10480637
-      Appearance.ColorMirrorCheckedTo = 5682430
-      Appearance.ColorMirrorDisabled = 11974326
+      Appearance.BorderColor = 15000546
+      Appearance.BorderColorHot = 16371364
+      Appearance.BorderColorDown = 14983778
+      Appearance.BorderColorChecked = 14327846
+      Appearance.BorderColorDisabled = 14606046
+      Appearance.Color = 16250613
+      Appearance.ColorTo = clNone
+      Appearance.ColorChecked = 14327846
+      Appearance.ColorCheckedTo = clNone
+      Appearance.ColorDisabled = 16250871
+      Appearance.ColorDisabledTo = clNone
+      Appearance.ColorDown = 16244937
+      Appearance.ColorDownTo = clNone
+      Appearance.ColorHot = 16248808
+      Appearance.ColorHotTo = clNone
+      Appearance.ColorMirror = 16250613
+      Appearance.ColorMirrorTo = clNone
+      Appearance.ColorMirrorHot = 16248808
+      Appearance.ColorMirrorHotTo = clNone
+      Appearance.ColorMirrorDown = 16244937
+      Appearance.ColorMirrorDownTo = clNone
+      Appearance.ColorMirrorChecked = 14327846
+      Appearance.ColorMirrorCheckedTo = clNone
+      Appearance.ColorMirrorDisabled = 16250871
       Appearance.ColorMirrorDisabledTo = 15921906
       Appearance.GradientHot = ggVertical
       Appearance.GradientMirrorHot = ggVertical
       Appearance.GradientDown = ggVertical
       Appearance.GradientMirrorDown = ggVertical
       Appearance.GradientChecked = ggVertical
+      Appearance.TextColorChecked = clWhite
       Layout = blGlyphTop
     end
     object btnFilterView: TAdvGlowButton
@@ -695,35 +697,37 @@ object formMain: TformMain
       Rounded = False
       Transparent = True
       TabOrder = 1
-      Appearance.BorderColor = 13421257
-      Appearance.BorderColorHot = 10079963
-      Appearance.BorderColorDown = 4548219
-      Appearance.BorderColorChecked = 4548219
-      Appearance.Color = 15987697
-      Appearance.ColorTo = 16119283
-      Appearance.ColorChecked = 11918331
-      Appearance.ColorCheckedTo = 7915518
-      Appearance.ColorDisabled = 15921906
-      Appearance.ColorDisabledTo = 15921906
-      Appearance.ColorDown = 7778289
-      Appearance.ColorDownTo = 4296947
-      Appearance.ColorHot = 15465983
-      Appearance.ColorHotTo = 11332863
-      Appearance.ColorMirror = 15657703
-      Appearance.ColorMirrorTo = 16316406
-      Appearance.ColorMirrorHot = 5888767
-      Appearance.ColorMirrorHotTo = 10807807
-      Appearance.ColorMirrorDown = 946929
-      Appearance.ColorMirrorDownTo = 5021693
-      Appearance.ColorMirrorChecked = 10480637
-      Appearance.ColorMirrorCheckedTo = 5682430
-      Appearance.ColorMirrorDisabled = 11974326
+      Appearance.BorderColor = 15000546
+      Appearance.BorderColorHot = 16371364
+      Appearance.BorderColorDown = 14983778
+      Appearance.BorderColorChecked = 14327846
+      Appearance.BorderColorDisabled = 14606046
+      Appearance.Color = 16250613
+      Appearance.ColorTo = clNone
+      Appearance.ColorChecked = 14327846
+      Appearance.ColorCheckedTo = clNone
+      Appearance.ColorDisabled = 16250871
+      Appearance.ColorDisabledTo = clNone
+      Appearance.ColorDown = 16244937
+      Appearance.ColorDownTo = clNone
+      Appearance.ColorHot = 16248808
+      Appearance.ColorHotTo = clNone
+      Appearance.ColorMirror = 16250613
+      Appearance.ColorMirrorTo = clNone
+      Appearance.ColorMirrorHot = 16248808
+      Appearance.ColorMirrorHotTo = clNone
+      Appearance.ColorMirrorDown = 16244937
+      Appearance.ColorMirrorDownTo = clNone
+      Appearance.ColorMirrorChecked = 14327846
+      Appearance.ColorMirrorCheckedTo = clNone
+      Appearance.ColorMirrorDisabled = 16250871
       Appearance.ColorMirrorDisabledTo = 15921906
       Appearance.GradientHot = ggVertical
       Appearance.GradientMirrorHot = ggVertical
       Appearance.GradientDown = ggVertical
       Appearance.GradientMirrorDown = ggVertical
       Appearance.GradientChecked = ggVertical
+      Appearance.TextColorChecked = clWhite
       Enabled = False
       Layout = blGlyphTop
       DropDownButton = True
@@ -731,9 +735,9 @@ object formMain: TformMain
       DropDownMenu = PopupFileTypes
     end
     object btnSaveAllFiles: TAdvGlowButton
-      Left = 237
+      Left = 235
       Top = 0
-      Width = 93
+      Width = 92
       Height = 55
       Hint = 'Save all files'
       Align = alLeft
@@ -822,46 +826,48 @@ object formMain: TformMain
       Transparent = True
       TabOrder = 2
       OnClick = btnSaveAllFilesClick
-      Appearance.BorderColor = 13421257
-      Appearance.BorderColorHot = 10079963
-      Appearance.BorderColorDown = 4548219
-      Appearance.BorderColorChecked = 4548219
-      Appearance.Color = 15987697
-      Appearance.ColorTo = 16119283
-      Appearance.ColorChecked = 11918331
-      Appearance.ColorCheckedTo = 7915518
-      Appearance.ColorDisabled = 15921906
-      Appearance.ColorDisabledTo = 15921906
-      Appearance.ColorDown = 7778289
-      Appearance.ColorDownTo = 4296947
-      Appearance.ColorHot = 15465983
-      Appearance.ColorHotTo = 11332863
-      Appearance.ColorMirror = 15657703
-      Appearance.ColorMirrorTo = 16316406
-      Appearance.ColorMirrorHot = 5888767
-      Appearance.ColorMirrorHotTo = 10807807
-      Appearance.ColorMirrorDown = 946929
-      Appearance.ColorMirrorDownTo = 5021693
-      Appearance.ColorMirrorChecked = 10480637
-      Appearance.ColorMirrorCheckedTo = 5682430
-      Appearance.ColorMirrorDisabled = 15921906
+      Appearance.BorderColor = 15000546
+      Appearance.BorderColorHot = 16371364
+      Appearance.BorderColorDown = 14983778
+      Appearance.BorderColorChecked = 14327846
+      Appearance.BorderColorDisabled = 14606046
+      Appearance.Color = 16250613
+      Appearance.ColorTo = clNone
+      Appearance.ColorChecked = 14327846
+      Appearance.ColorCheckedTo = clNone
+      Appearance.ColorDisabled = 16250871
+      Appearance.ColorDisabledTo = clNone
+      Appearance.ColorDown = 16244937
+      Appearance.ColorDownTo = clNone
+      Appearance.ColorHot = 16248808
+      Appearance.ColorHotTo = clNone
+      Appearance.ColorMirror = 16250613
+      Appearance.ColorMirrorTo = clNone
+      Appearance.ColorMirrorHot = 16248808
+      Appearance.ColorMirrorHotTo = clNone
+      Appearance.ColorMirrorDown = 16244937
+      Appearance.ColorMirrorDownTo = clNone
+      Appearance.ColorMirrorChecked = 14327846
+      Appearance.ColorMirrorCheckedTo = clNone
+      Appearance.ColorMirrorDisabled = 16250871
       Appearance.ColorMirrorDisabledTo = 15921906
       Appearance.GradientHot = ggVertical
       Appearance.GradientMirrorHot = ggVertical
       Appearance.GradientDown = ggVertical
       Appearance.GradientMirrorDown = ggVertical
       Appearance.GradientChecked = ggVertical
+      Appearance.TextColorChecked = clWhite
       Enabled = False
       Layout = blGlyphTop
       DropDownButton = True
       DropDownSplit = False
       DropDownMenu = popupSaveAll
-      ExplicitHeight = 56
+      ExplicitHeight = 52
     end
     object btnSaveFile: TAdvGlowButton
       Left = 164
       Top = 0
-      Width = 73
+      Width = 71
       Height = 55
       Hint = 'Save a file'
       Align = alLeft
@@ -955,41 +961,43 @@ object formMain: TformMain
       Transparent = True
       TabOrder = 3
       OnClick = btnSaveFileClick
-      Appearance.BorderColor = 13421257
-      Appearance.BorderColorHot = 10079963
-      Appearance.BorderColorDown = 4548219
-      Appearance.BorderColorChecked = 4548219
-      Appearance.Color = 15987697
-      Appearance.ColorTo = 16119283
-      Appearance.ColorChecked = 11918331
-      Appearance.ColorCheckedTo = 7915518
-      Appearance.ColorDisabled = 15921906
-      Appearance.ColorDisabledTo = 15921906
-      Appearance.ColorDown = 7778289
-      Appearance.ColorDownTo = 4296947
-      Appearance.ColorHot = 15465983
-      Appearance.ColorHotTo = 11332863
-      Appearance.ColorMirror = 15657703
-      Appearance.ColorMirrorTo = 16316406
-      Appearance.ColorMirrorHot = 5888767
-      Appearance.ColorMirrorHotTo = 10807807
-      Appearance.ColorMirrorDown = 946929
-      Appearance.ColorMirrorDownTo = 5021693
-      Appearance.ColorMirrorChecked = 10480637
-      Appearance.ColorMirrorCheckedTo = 5682430
-      Appearance.ColorMirrorDisabled = 11974326
+      Appearance.BorderColor = 15000546
+      Appearance.BorderColorHot = 16371364
+      Appearance.BorderColorDown = 14983778
+      Appearance.BorderColorChecked = 14327846
+      Appearance.BorderColorDisabled = 14606046
+      Appearance.Color = 16250613
+      Appearance.ColorTo = clNone
+      Appearance.ColorChecked = 14327846
+      Appearance.ColorCheckedTo = clNone
+      Appearance.ColorDisabled = 16250871
+      Appearance.ColorDisabledTo = clNone
+      Appearance.ColorDown = 16244937
+      Appearance.ColorDownTo = clNone
+      Appearance.ColorHot = 16248808
+      Appearance.ColorHotTo = clNone
+      Appearance.ColorMirror = 16250613
+      Appearance.ColorMirrorTo = clNone
+      Appearance.ColorMirrorHot = 16248808
+      Appearance.ColorMirrorHotTo = clNone
+      Appearance.ColorMirrorDown = 16244937
+      Appearance.ColorMirrorDownTo = clNone
+      Appearance.ColorMirrorChecked = 14327846
+      Appearance.ColorMirrorCheckedTo = clNone
+      Appearance.ColorMirrorDisabled = 16250871
       Appearance.ColorMirrorDisabledTo = 15921906
       Appearance.GradientHot = ggVertical
       Appearance.GradientMirrorHot = ggVertical
       Appearance.GradientDown = ggVertical
       Appearance.GradientMirrorDown = ggVertical
       Appearance.GradientChecked = ggVertical
+      Appearance.TextColorChecked = clWhite
       Enabled = False
       Layout = blGlyphTop
       DropDownButton = True
       DropDownSplit = False
       DropDownMenu = popupSave
-      ExplicitHeight = 56
+      ExplicitHeight = 52
     end
     object btnOpen: TAdvGlowButton
       Left = 0
@@ -1430,35 +1438,37 @@ object formMain: TformMain
       Rounded = False
       Transparent = True
       TabOrder = 4
-      Appearance.BorderColor = 13421257
-      Appearance.BorderColorHot = 10079963
-      Appearance.BorderColorDown = 4548219
-      Appearance.BorderColorChecked = 4548219
-      Appearance.Color = 15987697
-      Appearance.ColorTo = 16119283
-      Appearance.ColorChecked = 11918331
-      Appearance.ColorCheckedTo = 7915518
-      Appearance.ColorDisabled = 15921906
-      Appearance.ColorDisabledTo = 15921906
-      Appearance.ColorDown = 7778289
-      Appearance.ColorDownTo = 4296947
-      Appearance.ColorHot = 15465983
-      Appearance.ColorHotTo = 11332863
-      Appearance.ColorMirror = 15657703
-      Appearance.ColorMirrorTo = 16316406
-      Appearance.ColorMirrorHot = 5888767
-      Appearance.ColorMirrorHotTo = 10807807
-      Appearance.ColorMirrorDown = 946929
-      Appearance.ColorMirrorDownTo = 5021693
-      Appearance.ColorMirrorChecked = 10480637
-      Appearance.ColorMirrorCheckedTo = 5682430
-      Appearance.ColorMirrorDisabled = 11974326
+      Appearance.BorderColor = 15000546
+      Appearance.BorderColorHot = 16371364
+      Appearance.BorderColorDown = 14983778
+      Appearance.BorderColorChecked = 14327846
+      Appearance.BorderColorDisabled = 14606046
+      Appearance.Color = 16250613
+      Appearance.ColorTo = clNone
+      Appearance.ColorChecked = 14327846
+      Appearance.ColorCheckedTo = clNone
+      Appearance.ColorDisabled = 16250871
+      Appearance.ColorDisabledTo = clNone
+      Appearance.ColorDown = 16244937
+      Appearance.ColorDownTo = clNone
+      Appearance.ColorHot = 16248808
+      Appearance.ColorHotTo = clNone
+      Appearance.ColorMirror = 16250613
+      Appearance.ColorMirrorTo = clNone
+      Appearance.ColorMirrorHot = 16248808
+      Appearance.ColorMirrorHotTo = clNone
+      Appearance.ColorMirrorDown = 16244937
+      Appearance.ColorMirrorDownTo = clNone
+      Appearance.ColorMirrorChecked = 14327846
+      Appearance.ColorMirrorCheckedTo = clNone
+      Appearance.ColorMirrorDisabled = 16250871
       Appearance.ColorMirrorDisabledTo = 15921906
       Appearance.GradientHot = ggVertical
       Appearance.GradientMirrorHot = ggVertical
       Appearance.GradientDown = ggVertical
       Appearance.GradientMirrorDown = ggVertical
       Appearance.GradientChecked = ggVertical
+      Appearance.TextColorChecked = clWhite
       Layout = blGlyphTop
       DropDownButton = True
       DropDownSplit = False
@@ -1481,10 +1491,11 @@ object formMain: TformMain
       Font.Style = []
       ParentFont = False
       TabOrder = 5
+      Text = ''
       OnChange = editFindChange
     end
     object btnSendToHex: TAdvGlowButton
-      Left = 412
+      Left = 409
       Top = 0
       Width = 82
       Height = 55
@@ -7061,35 +7072,37 @@ object formMain: TformMain
       Transparent = True
       TabOrder = 6
       OnClick = btnSendToHexClick
-      Appearance.BorderColor = 13421257
-      Appearance.BorderColorHot = 10079963
-      Appearance.BorderColorDown = 4548219
-      Appearance.BorderColorChecked = 4548219
-      Appearance.Color = 15987697
-      Appearance.ColorTo = 16119283
-      Appearance.ColorChecked = 11918331
-      Appearance.ColorCheckedTo = 7915518
-      Appearance.ColorDisabled = 15921906
-      Appearance.ColorDisabledTo = 15921906
-      Appearance.ColorDown = 7778289
-      Appearance.ColorDownTo = 4296947
-      Appearance.ColorHot = 15465983
-      Appearance.ColorHotTo = 11332863
-      Appearance.ColorMirror = 15657703
-      Appearance.ColorMirrorTo = 16316406
-      Appearance.ColorMirrorHot = 5888767
-      Appearance.ColorMirrorHotTo = 10807807
-      Appearance.ColorMirrorDown = 946929
-      Appearance.ColorMirrorDownTo = 5021693
-      Appearance.ColorMirrorChecked = 10480637
-      Appearance.ColorMirrorCheckedTo = 5682430
-      Appearance.ColorMirrorDisabled = 11974326
+      Appearance.BorderColor = 15000546
+      Appearance.BorderColorHot = 16371364
+      Appearance.BorderColorDown = 14983778
+      Appearance.BorderColorChecked = 14327846
+      Appearance.BorderColorDisabled = 14606046
+      Appearance.Color = 16250613
+      Appearance.ColorTo = clNone
+      Appearance.ColorChecked = 14327846
+      Appearance.ColorCheckedTo = clNone
+      Appearance.ColorDisabled = 16250871
+      Appearance.ColorDisabledTo = clNone
+      Appearance.ColorDown = 16244937
+      Appearance.ColorDownTo = clNone
+      Appearance.ColorHot = 16248808
+      Appearance.ColorHotTo = clNone
+      Appearance.ColorMirror = 16250613
+      Appearance.ColorMirrorTo = clNone
+      Appearance.ColorMirrorHot = 16248808
+      Appearance.ColorMirrorHotTo = clNone
+      Appearance.ColorMirrorDown = 16244937
+      Appearance.ColorMirrorDownTo = clNone
+      Appearance.ColorMirrorChecked = 14327846
+      Appearance.ColorMirrorCheckedTo = clNone
+      Appearance.ColorMirrorDisabled = 16250871
       Appearance.ColorMirrorDisabledTo = 15921906
       Appearance.GradientHot = ggVertical
       Appearance.GradientMirrorHot = ggVertical
       Appearance.GradientDown = ggVertical
       Appearance.GradientMirrorDown = ggVertical
       Appearance.GradientChecked = ggVertical
+      Appearance.TextColorChecked = clWhite
       Enabled = False
       Layout = blGlyphTop
     end
@@ -13291,6 +13304,7 @@ object formMain: TformMain
       PlainText = True
       ReadOnly = True
       ScrollBars = ssVertical
+      SelText = ''
       TabOrder = 0
       OnURLClick = memoLogURLClick
     end
@@ -13305,7 +13319,9 @@ object formMain: TformMain
     Flat = False
   end
   object OpenDialog1: TOpenDialog
-    Filter = 'H, FSB and PCK Files|*.~h;*.FSB;*.PCK|All Files|*'
+    Filter = 
+      'H, FSB, PKG, PCK, PPF Files|*.~h;*.FSB;*.PCK;*.PKG;*.PPF|All Fil' +
+      'es|*'
     Left = 24
     Top = 88
   end
@@ -13313,121 +13329,21 @@ object formMain: TformMain
     Filter = 'All Files|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Title = 'Save File...'
-    Left = 24
-    Top = 128
+    Left = 80
+    Top = 88
   end
   object dlgBrowseForSaveFolder: TJvBrowseForFolderDialog
     Title = 'Save files in...'
     Left = 24
-    Top = 176
+    Top = 160
   end
-  object AdvMenuOfficeStyler1: TAdvMenuOfficeStyler
-    AntiAlias = aaNone
-    AutoThemeAdapt = False
-    Style = osOffice2007Silver
-    Background.Position = bpCenter
-    Background.Color = 16448250
-    Background.ColorTo = 16448250
-    ButtonAppearance.DownColor = 13421257
-    ButtonAppearance.DownColorTo = 15395047
-    ButtonAppearance.HoverColor = 14737117
-    ButtonAppearance.HoverColorTo = 16052977
-    ButtonAppearance.DownBorderColor = 11906984
-    ButtonAppearance.HoverBorderColor = 11906984
-    ButtonAppearance.CaptionFont.Charset = DEFAULT_CHARSET
-    ButtonAppearance.CaptionFont.Color = clWindowText
-    ButtonAppearance.CaptionFont.Height = -11
-    ButtonAppearance.CaptionFont.Name = 'Segoe UI'
-    ButtonAppearance.CaptionFont.Style = []
-    IconBar.Color = 15724527
-    IconBar.ColorTo = 15724527
-    IconBar.CheckBorder = clNavy
-    IconBar.RadioBorder = clNavy
-    IconBar.SeparatorColor = 12961221
-    SelectedItem.Color = 15465983
-    SelectedItem.ColorTo = 11267071
-    SelectedItem.ColorMirror = 6936319
-    SelectedItem.ColorMirrorTo = 9889023
-    SelectedItem.BorderColor = 10079963
-    SelectedItem.Font.Charset = DEFAULT_CHARSET
-    SelectedItem.Font.Color = clWindowText
-    SelectedItem.Font.Height = -12
-    SelectedItem.Font.Name = 'Segoe UI'
-    SelectedItem.Font.Style = []
-    SelectedItem.NotesFont.Charset = DEFAULT_CHARSET
-    SelectedItem.NotesFont.Color = clWindowText
-    SelectedItem.NotesFont.Height = -9
-    SelectedItem.NotesFont.Name = 'Segoe UI'
-    SelectedItem.NotesFont.Style = []
-    SelectedItem.CheckBorder = clNavy
-    SelectedItem.RadioBorder = clNavy
-    RootItem.ColorTo = 16249843
-    RootItem.Font.Charset = DEFAULT_CHARSET
-    RootItem.Font.Color = clMenuText
-    RootItem.Font.Height = -12
-    RootItem.Font.Name = 'Segoe UI'
-    RootItem.Font.Style = []
-    RootItem.SelectedColor = 7778289
-    RootItem.SelectedColorTo = 4296947
-    RootItem.SelectedColorMirror = 946929
-    RootItem.SelectedColorMirrorTo = 5021693
-    RootItem.SelectedBorderColor = 4548219
-    RootItem.HoverColor = 15465983
-    RootItem.HoverColorTo = 11267071
-    RootItem.HoverColorMirror = 6936319
-    RootItem.HoverColorMirrorTo = 9889023
-    RootItem.HoverBorderColor = 10079963
-    Glyphs.SubMenu.Data = {
-      5A000000424D5A000000000000003E0000002800000004000000070000000100
-      0100000000001C0000000000000000000000020000000200000000000000FFFF
-      FF0070000000300000001000000000000000100000003000000070000000}
-    Glyphs.Check.Data = {
-      7E000000424D7E000000000000003E0000002800000010000000100000000100
-      010000000000400000000000000000000000020000000200000000000000FFFF
-      FF00FFFF0000FFFF0000FFFF0000FFFF0000FDFF0000F8FF0000F07F0000F23F
-      0000F71F0000FF8F0000FFCF0000FFEF0000FFFF0000FFFF0000FFFF0000FFFF
-      0000}
-    Glyphs.Radio.Data = {
-      7E000000424D7E000000000000003E0000002800000010000000100000000100
-      010000000000400000000000000000000000020000000200000000000000FFFF
-      FF00FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FC3F0000F81F0000F81F
-      0000F81F0000F81F0000FC3F0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF
-      0000}
-    SideBar.Font.Charset = DEFAULT_CHARSET
-    SideBar.Font.Color = clWhite
-    SideBar.Font.Height = -19
-    SideBar.Font.Name = 'Tahoma'
-    SideBar.Font.Style = [fsBold, fsItalic]
-    SideBar.Image.Position = bpCenter
-    SideBar.Background.Position = bpCenter
-    SideBar.SplitterColorTo = clBlack
-    Separator.Color = 12961221
-    Separator.GradientType = gtBoth
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clMenuText
-    Font.Height = -12
-    Font.Name = 'Segoe UI'
-    Font.Style = []
-    NotesFont.Charset = DEFAULT_CHARSET
-    NotesFont.Color = clGray
-    NotesFont.Height = -9
-    NotesFont.Name = 'Segoe UI'
-    NotesFont.Style = []
-    MenuBorderColor = 8816262
-    Left = 368
-    Top = 264
-  end
-  object PopupFileTypes: TAdvPopupMenu
+  object PopupFileTypes: TPopupMenu
     Images = ImageList1
-    MenuStyler = AdvMenuOfficeStyler1
-    Version = '2.5.3.4'
     Left = 368
     Top = 208
   end
-  object popupOpen: TAdvPopupMenu
+  object popupOpen: TPopupMenu
     Images = ImageList1
-    MenuStyler = AdvMenuOfficeStyler1
-    Version = '2.5.3.4'
     Left = 368
     Top = 144
     object MenuItemOpenFolder: TMenuItem
@@ -13450,7 +13366,12 @@ object formMain: TformMain
     end
     object MenuItemOpenCostumeQuest: TMenuItem
       Caption = 'Costume Quest'
-      ImageIndex = 3
+      ImageIndex = 6
+      OnClick = OpenPopupMenuHandler
+    end
+    object MenuItemOpenCostumeQuest2: TMenuItem
+      Caption = 'Costume Quest 2'
+      ImageIndex = 6
       OnClick = OpenPopupMenuHandler
     end
     object MenuItemOpenIronBrigade: TMenuItem
@@ -13469,10 +13390,8 @@ object formMain: TformMain
       OnClick = OpenPopupMenuHandler
     end
   end
-  object popupSave: TAdvPopupMenu
+  object popupSave: TPopupMenu
     Images = ImageList1
-    MenuStyler = AdvMenuOfficeStyler1
-    Version = '2.5.3.4'
     Left = 296
     Top = 144
     object menuItemDumpFile: TMenuItem
@@ -13506,10 +13425,8 @@ object formMain: TformMain
       OnClick = menuItemDumpLuaClick
     end
   end
-  object popupSaveAll: TAdvPopupMenu
+  object popupSaveAll: TPopupMenu
     Images = ImageList1
-    MenuStyler = AdvMenuOfficeStyler1
-    Version = '2.5.3.4'
     Left = 296
     Top = 208
     object menuItemSaveAllRaw: TMenuItem
@@ -13551,10 +13468,10 @@ object formMain: TformMain
   object ImageList1: TImageList
     ColorDepth = cd32Bit
     DrawingStyle = dsTransparent
-    Left = 176
-    Top = 216
+    Left = 160
+    Top = 96
     Bitmap = {
-      494C010110001100D80010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010110001500040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -14225,7 +14142,7 @@ object formMain: TformMain
     Enabled = False
     Interval = 500
     OnTimer = Timer1Timer
-    Left = 112
-    Top = 192
+    Left = 160
+    Top = 160
   end
 end

@@ -765,9 +765,9 @@ object Aboutfrm: TAboutfrm
     ExplicitWidth = 377
   end
   object JvScrollText1: TJvScrollText
-    Left = 60
-    Top = 135
-    Width = 337
+    Left = 0
+    Top = 129
+    Width = 421
     Height = 188
     Alignment = taCenter
     Items.Strings = (
@@ -781,6 +781,8 @@ object Aboutfrm: TAboutfrm
       ''
       ''
       'Credits/Thanks:'
+      ''
+      'Doublefine for their wonderful games'
       ''
       'Luigi Auriemma'
       'Information on FSB files'
@@ -799,6 +801,10 @@ object Aboutfrm: TAboutfrm
     Font.Height = -11
     Font.Name = 'Tahoma'
     Font.Style = []
+    Align = alClient
     WordWrap = True
+    ExplicitLeft = 84
+    ExplicitWidth = 188
+    ExplicitHeight = 337
   end
 end

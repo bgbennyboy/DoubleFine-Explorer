@@ -38,7 +38,9 @@ uses
   uDFExplorer_FSBManager in 'uDFExplorer_FSBManager.pas',
   frmAbout in 'frmAbout.pas' {Aboutfrm},
   uDFExplorer_BaseBundleManager in 'uDFExplorer_BaseBundleManager.pas',
-  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas';
+  uDFExplorer_PPAKManager in 'uDFExplorer_PPAKManager.pas',
+  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas',
+  uDFExplorer_PKGManager in 'uDFExplorer_PKGManager.pas';
 
 {$R *.res}
 
