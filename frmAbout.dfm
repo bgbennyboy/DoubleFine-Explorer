@@ -803,8 +803,5 @@ object Aboutfrm: TAboutfrm
     Font.Style = []
     Align = alClient
     WordWrap = True
-    ExplicitLeft = 84
-    ExplicitWidth = 188
-    ExplicitHeight = 337
   end
 end

@@ -1,24 +1,14 @@
 {
 ******************************************************
   DoubleFine Explorer
-  Copyright (c) 2014 Bennyboy
+  By Bennyboy
   Http://quickandeasysoftware.net
 ******************************************************
 }
 {
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 }
 
 unit uDFExplorer_FSBManager;
@@ -28,7 +18,7 @@ interface
 uses
   classes, sysutils, Contnrs, forms,
   uFileReader, uMemReader, uDFExplorer_BaseBundleManager, uDFExplorer_Types, uDFExplorer_Funcs,
-  uWaveWriter, JCLSysInfo, JCLShell, Windows;
+  uWaveWriter, JCLSysInfo, JCLShell, Windows, uMPEGHeaderCheck;
 
 type
   TFSBManager = class (TBundleManager)
@@ -45,9 +35,11 @@ type
     function DecryptFSB(InStream: TStream; Offset, Size: integer; OutStream: TStream; Key: Array of byte; KeyOffset: integer = -1): boolean;
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
+    function GetFSB5Offset(InValue: Dword): DWord;
     procedure Log(Text: string); override;
     procedure ParseFSB5;
     procedure ParseFSB4;
+    procedure SaveFixedMP3Stream(InStream, OutStream: TStream; FileSize, Channels: integer);
   public
     BundleFiles: TObjectList;
     constructor Create(ResourceFile: string); override;
@@ -432,9 +424,10 @@ procedure TFSBManager.ParseFSB5;
 //Based on FSBExt by Luigi Auriemma - doesnt include all FSB5 dumping stuff - just enough to work for known DF FSB files
 var
   Version, NumSamples, SampleHeaderSize, NameSize, Datasize, Mode, i,
-  Len, NameOffset: integer;
+  Len, NameOffset, Frequency: integer;
 
   Offset, Samples, TheType, TempDWord, Size, FileOff: dword;
+  Channels: word;
   TempQWord: uint64;
   TempStr: string;
   FileObject: TFSBFile;
@@ -470,9 +463,30 @@ begin
   begin
     Offset := fMemoryBundle.ReadDWord;
     Samples := fMemoryBundle.ReadDWord shr 2;  //Used in XMA
+
+    TheType := Offset and ((1 shl 7) -1);
+    Offset := GetFSB5Offset(Offset);
+    Channels := (TheType shr 5) + 1;
+
+    case ((TheType shr 1) and ((1 shl 4) - 1)) of
+      0:  Frequency := 4000;
+      1:  Frequency := 8000;
+      2:  Frequency := 11000;
+      3:  Frequency := 12000;
+      4:  Frequency := 16000;
+      5:  Frequency := 22050;
+      6:  Frequency := 24000;
+      7:  Frequency := 32000;
+      8:  Frequency := 44100;
+      9:  Frequency := 48000;
+      10: Frequency := 96000;
+      else Frequency := 44100;
+    end;
+    {
+    Gone in fsbext 0.3.3
     TheType := Offset and $FF;
     Offset := Offset shr 8;
-    Offset := Offset * $40; //64;
+    Offset := Offset * $40;} //64;
 
     {Log('Offset '  + Inttostr( Offset));
     Log('Samples ' + Inttostr( Samples));
@@ -486,8 +500,8 @@ begin
       TempDWord := TempDWord shr 24;
       TempQWord := fMemoryBundle.Position;
       case TempDWord of
-        2: fMemoryBundle.Seek(1, sofromcurrent); //channels
-        4: fMemoryBundle.Seek(4, sofromcurrent); //frequency
+        2: Channels := fMemoryBundle.ReadByte; //fMemoryBundle.Seek(1, sofromcurrent); //channels
+        4: Frequency := fMemoryBundle.ReadDWord;  //fMemoryBundle.Seek(4, sofromcurrent); //frequency
         6: begin
             fMemoryBundle.Seek(4, sofromcurrent); //unknown
             fMemoryBundle.Seek(4, sofromcurrent); //unknown
@@ -510,9 +524,10 @@ begin
       end
       else
       begin
-        Size := Size shr 8;
+        {Size := Size shr 8;
         Size := Size * $40;
-        Size := Size + (NameOffset + NameSize); //base offset
+        Size := Size + (NameOffset + NameSize);} //base offset
+        Size := GetFSB5Offset(Size) + (NameOffset + NameSize); //base offset
       end
     end
     else
@@ -539,12 +554,18 @@ begin
     FileObject.offset        := FileOff;
     FileObject.FileName      := Tempstr + '.mp3';
     FileObject.FileType      := ft_Audio;
+    FileObject.Channels      := Channels;
     FileObject.FileExtension := 'MP3';
     FileObject.Codec         := FMOD_SOUND_FORMAT_MPEG; //TODO - other codec detection for FSB5 - not needed by any games seen so far
 
     BundleFiles.Add(FileObject);
   end;
 
+end;
+
+function TFSBManager.GetFSB5Offset(InValue: Dword): DWord;
+begin
+  result := (InValue shr 7) * $20;
 end;
 
 procedure TFSBManager.SaveFile(FileNo: integer; DestDir, FileName: string);
@@ -647,12 +668,96 @@ begin
     end;
   end
   else
+  if (TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_MPEG) then //fix broken mp3's
+  begin
+    SaveFixedMP3Stream(fMemoryBundle, DestStream, TFSBFile(BundleFiles.Items[FileNo]).Size, TFSBFile(BundleFiles.Items[FileNo]).Channels);
+  end
+  else
     DestStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
 
 
   DestStream.Position:=0;
 end;
 
+function ShouldDownmixChannels(Channels, Frame: integer): boolean;
+var
+	ChansResult: integer;
+begin
+	if (Channels and 1) = 1 then
+		ChansResult := Channels
+	else
+		ChansResult := Channels div 2;
 
+	ChansResult := frame mod ChansResult;
+
+	if (Channels <= 2) or (ChansResult = 0) then
+		result := true
+	else
+		result := false;
+end;
+
+procedure TFSBManager.SaveFixedMP3Stream(InStream, OutStream: TStream; FileSize, Channels: integer);
+var
+	Frame, FrameSize, n: integer;
+  Buffer: TBuffer;
+	TempBuffer: TBuffer;
+	tmpMpegHeader: TMpegHeader;
+	TempByte: Byte;
+begin
+	Frame := 0;
+	while FileSize > 0 do
+	begin
+    SetLength(buffer, 3);
+		if InStream.Read(Buffer[0], 3) <> 3 then  //bytes read
+			break;
+
+		Dec(FileSize, 3);
+		FrameSize := 0;
+    //read 3 bytes, if invalid header then read another and shuffle the bytes up in the buffer and check again.
+		while FileSize > 0 do
+		begin
+      tmpMpegHeader := GetValidatedHeader(Buffer, 0);
+		  FrameSize := tmpMpegHeader.framelength;
+      if tmpMpegHeader.valid = true then
+        if FrameSize > 0 then break;
+
+      if InStream.Size - InStream.Position < 1 then //Just in case
+      begin
+        Log('Tried to read beyond stream in SaveFixedMP3Stream()');
+        exit;
+      end;
+      InStream.Read(TempByte, 1);
+
+		  Dec(FileSize, 1);
+
+		  Buffer[0] := Buffer[1];
+		  Buffer[1] := Buffer[2];
+		  Buffer[2] := tempbyte;
+		end;
+
+		if FileSize < 0 then break;
+
+		dec(FrameSize, 3);
+
+		if ShouldDownmixChannels(Channels, Frame) then
+      Outstream.Write(Buffer[0], 3);
+
+    if FrameSize > 0 then
+    begin
+      SetLength(TempBuffer,FrameSize);
+      n := InStream.Read(TempBuffer[0], FrameSize);
+      dec(FileSize, n);
+
+      if ShouldDownmixChannels(Channels, Frame) then
+        OutStream.Write(TempBuffer[0], n);
+
+      if n <> FrameSize then
+        break;
+    end;
+
+		inc(Frame);
+	end;
+
+end;
 
 end.
