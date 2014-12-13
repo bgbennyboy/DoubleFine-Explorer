@@ -41,13 +41,14 @@ private
   procedure Log(Text: string);
   function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessDDSToStream(SourceStream, DestStream: TStream): boolean;
-  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DestStream: TStream);
+  function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream, DestStream: TStream): boolean;
+  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE; DestStream: TStream; IsCubemap: boolean = false);
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
   destructor Destroy; override;
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
-  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; HeaderlessDDS: boolean = false): boolean;
-  function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; HeaderlessDDS: boolean = false): boolean;
+  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
+  function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType: TDDSType = DDS_NORMAL): boolean;
   procedure Initialise;
   procedure SaveFile(FileNo: integer; DestDir, FileName: string; DoLog: boolean = true);
   procedure SaveFiles(DestDir: string);
@@ -272,6 +273,7 @@ begin
 
   ImgBitmap := TImagingBitmap.Create;
   try
+    MemStream.Position :=0;
     ImgBitmap.LoadFromStream(MemStream);
     if ImgBitmap.Empty then
       Exit;
@@ -284,7 +286,7 @@ begin
 end;
 
 function TDFExplorerBase.DrawImageDDS(FileIndex: integer;
-  DestBitmap: TBitmap32; HeaderlessDDS: boolean = false): boolean;
+  DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
 var
   TempStream, DDSStream: TExplorerMemoryStream;
 begin
@@ -297,10 +299,11 @@ begin
 
     DDSStream:=TExplorerMemoryStream.Create;
     try
-      if HeaderlessDDS then
-        WriteHeaderlessDDSToStream(Tempstream, DDSStream)
-      else
-        WriteDDSToStream(Tempstream, DDSStream);
+      case DDSType of
+        DDS_NORMAL: WriteDDSToStream(Tempstream, DDSStream);
+        DDS_HEADERLESS: WriteHeaderlessDDSToStream(Tempstream, DDSStream);
+        DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
+      end;
 
       DestBitmap.Clear();
       destbitmap.CombineMode:=cmBlend;
@@ -360,6 +363,7 @@ var
   TempInt,  FirstCompChunkSize, FirstChunkDecompressedSize, SecondChunkCompSize, SecondChunkDecompressedSize: integer;
   Width, Height: word;
   TempStream: TMemoryStream;
+  DXTType: TDXTType;
 begin
 {
   4 bytes "TEX "
@@ -433,14 +437,26 @@ begin
         Log('Decompressed size mismatch!');
 
 
+
     //Correct for images with mipmaps - remove them - they sometimes crash the internal dds reader
     if TempStream.Size > (Width * Height) then //DXT5 with mipmap
+    begin
       Tempstream.Size := (Width * Height);
-
+      DXTType := DXT5;
+    end
+    else
     if TempStream.Size < (Width * Height) then //DXT1 with mipmap
+    begin
       TempStream.Size := ((Width * Height) div 2);
+      DXTType := DXT1;
+    end
+    else
+    begin
+      //Log('Unknown DXT type! Assuming DXT5');
+      DXTType := DXT5;
+    end;
 
-    AddDDSHeaderToStream(Width, Height, TempStream.Size, DestStream);
+    AddDDSHeaderToStream(Width, Height, TempStream.Size, DXTType, DestStream);
     TempStream.Position := 0;
     DestStream.CopyFrom(TempStream, TempStream.Size);
     Result := true;
@@ -450,8 +466,45 @@ begin
 
 end;
 
-procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer;
-  DestStream: TStream);
+function TDFExplorerBase.WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS;
+  SourceStream, DestStream: TStream): boolean;
+var
+  TextureSize: integer;
+  DXTType : TDXTType;
+begin
+  result := false;
+
+  case PsychoDDS.TextureID of
+    0: DXTType := NO_FOURCC;
+    //6:  DXTType := DXT5; //??
+    9:  DXTType := DXT1;
+    10: DXTType := DXT3;
+    11: DXTType := DXT5;
+    //12: DXTType := 0; //24 bit??
+    //14: DXTType := DXT5; //CHECK - 14 special case
+    else
+    begin
+      Log('Texture ID not yet supported ' + inttostr(PsychoDDS.TextureID));
+      exit;
+    end;
+  end;
+
+  SourceStream.Position := PsychoDDS.DataOffset;
+
+  //Just main texture - ignore any mipmaps
+  TextureSize := PsychoDDS.MainTextureSize; //SourceStream.Size - SourceStream.Position;// - PsychoDDS.MipmapSize;
+
+  //Parsing textureid 0 is not always correct and very hacky
+  if (SourceStream.Size - SourceStream.Position) < TextureSize then
+    TextureSize := SourceStream.Size - SourceStream.Position;
+
+  AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, DXTType, DestStream, PsychoDDS.IsCubemap);
+  DestStream.CopyFrom(SourceStream, TextureSize);
+  Result := true;
+end;
+
+procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE;
+  DestStream: TStream; IsCubemap: boolean = false);
 const
   DDSD_CAPS =                       $00000001;
   DDSD_HEIGHT =                     $00000002;
@@ -476,6 +529,10 @@ const
   DDSCAPS2_CUBEMAP_NEGATIVEZ =      $00008000;
   DDSCAPS2_VOLUME =                 $00200000;
   DDSMAGIC = 542327876; //'DDS '
+  FOURCC_DXT1 = $31545844; // 'DXT1'
+  FOURCC_DXT3 = $33545844; // 'DXT3'
+  FOURCC_DXT5 = $35545844; // 'DXT5'
+
 type
   TDDPIXELFORMAT = record
     dwSize,
@@ -523,27 +580,53 @@ begin
   Header.SurfaceFormat.dwFlags := DDSD_CAPS or DDSD_HEIGHT or DDSD_WIDTH or DDSD_PIXELFORMAT or DDSD_LINEARSIZE;
   Header.SurfaceFormat.dwHeight := Height;
   Header.SurfaceFormat.dwWidth := Width;
-
-  Header.SurfaceFormat.dwMipMapCount := 1;
-
-  //Check for mipmaps
-  {if Datasize > (Width * Height) then
-    if (Width * Height) + ( (Width * Height) div 2)  = Datasize then
-        Header.SurfaceFormat.dwMipMapCount := 2;}
-
-  Header.SurfaceFormat.dwDepth := 1;
-  Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
+  //Header.SurfaceFormat.dwMipMapCount := 0;
+  //Header.SurfaceFormat.dwDepth := 1;
   Header.SurfaceFormat.ddpfPixelFormat.dwSize := 32;
-  Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC; // or DDPF_ALPHAPIXELS;
-  //Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;
 
-  if Datasize < ((Width * Height)) then
-    TempFourCC := 827611204 //DXT1
+  if DXTType = NO_FOURCC then
+  begin
+    Header.SurfaceFormat.dwFlags := Header.SurfaceFormat.dwFlags or DDSD_PITCH;
+    Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_RGB or DDPF_ALPHAPIXELS;
+    Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount := 32;
+    Header.SurfaceFormat.ddpfPixelFormat.dwRBitMask := $00FF0000;
+    Header.SurfaceFormat.ddpfPixelFormat.dwGBitMask := $0000FF00;
+    Header.SurfaceFormat.ddpfPixelFormat.dwBBitMask := $000000FF;
+    Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;
+    Header.SurfaceFormat.dwPitchOrLinearSize := Height * Cardinal( (Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount div 8) * Width )
+  end
   else
-    TempFourCC := 894720068; //DXT5
+  begin
+    Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC;
+    Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
+  end;
+
+
+
+  TempFourCC := 0;
+  case DXTType of
+    DXT1:      TempFourCC := FOURCC_DXT1;
+    DXT3:      TempFourCC := FOURCC_DXT3;
+    DXT5:      TempFourCC := FOURCC_DXT5;
+    NO_FOURCC: TempFourCC := 0;
+  end;
+
 
   Header.SurfaceFormat.ddpfPixelFormat.dwFourCC :=  TempFourCC;
-  Header.SurfaceFormat.ddsCaps.dwCaps1 := DDSCAPS_TEXTURE;
+  Header.SurfaceFormat.ddsCaps.dwCaps1 := DDSCAPS_TEXTURE {or DDSCAPS_COMPLEX};
+  if IsCubeMap=true then
+  begin
+    Header.SurfaceFormat.ddsCaps.dwCaps1 := Header.SurfaceFormat.ddsCaps.dwCaps1 or DDSCAPS_COMPLEX;
+    Header.SurfaceFormat.ddsCaps.dwCaps2 :=  DDSCAPS2_CUBEMAP or
+                                             DDSCAPS2_CUBEMAP_POSITIVEX or
+                                             DDSCAPS2_CUBEMAP_NEGATIVEX or
+                                             DDSCAPS2_CUBEMAP_POSITIVEY or
+                                             DDSCAPS2_CUBEMAP_NEGATIVEY or
+                                             DDSCAPS2_CUBEMAP_POSITIVEZ or
+                                             DDSCAPS2_CUBEMAP_NEGATIVEZ;
+  end;
+
+
   DestStream.Position := 0;
   DestStream.Write(header, SizeOf(TDDSHeader));
 end;
@@ -614,7 +697,7 @@ end;
 
 
 function TDFExplorerBase.SaveDDSToFile(FileIndex: integer; DestDir,
-  FileName: string; HeaderlessDDS: boolean = false): boolean;
+  FileName: string; DDSType: TDDSType = DDS_NORMAL): boolean;
 var
   TempStream: TExplorerMemoryStream;
   SaveFile: TFileStream;
@@ -635,10 +718,11 @@ begin
 
     SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
     try
-      if HeaderlessDDS then
-        Result := WriteHeaderlessDDSToStream(Tempstream, SaveFile)
-      else
-        Result := WriteDDSToStream(Tempstream, SaveFile);
+      case DDSType of
+        DDS_NORMAL: Result := WriteDDSToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS: Result := WriteHeaderlessDDSToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, SaveFile);
+      end;
     finally
       SaveFile.Free;
     end;

@@ -28,6 +28,7 @@ type
     ft_GenericImage,
     ft_DDSImage,
     ft_HeaderlessDDSImage,
+    ft_HeaderlessPsychoDDSImage,
     ft_Text,
     ft_CSVText,
     ft_DelimitedText,
@@ -37,6 +38,17 @@ type
     ft_Other,
     ft_Unknown
   );
+
+  TPsychonautsDDS = class
+    TextureID: integer;
+    Width:     integer;
+    Height:    integer;
+    Mipmaps:   integer;
+    DataOffset: integer;
+    //MipmapSize: integer;
+    MainTextureSize: integer;
+    IsCubemap: boolean;
+  end;
 
   TDFFile = class
     FileName: string;
@@ -49,7 +61,21 @@ type
     Compressed: boolean;
     FileExtension: string;
     FileType: TFileType;
+    PsychonautsDDS: TPsychonautsDDS;
   end;
+
+  TDDSType = (
+    DDS_NORMAL,
+    DDS_HEADERLESS,
+    DDS_HEADERLESS_PSYCHONAUTS
+  );
+
+  TDXTTYPE = (
+    DXT1,
+    DXT3,
+    DXT5,
+    NO_FOURCC
+  );
 
   TFSBCodec = (
     FMOD_SOUND_FORMAT_NONE,             //* Unitialized / unknown. */

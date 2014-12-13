@@ -13379,6 +13379,11 @@ object formMain: TformMain
       ImageIndex = 5
       OnClick = OpenPopupMenuHandler
     end
+    object MenuItemOpenPsychonauts: TMenuItem
+      Caption = 'Psychonauts'
+      ImageIndex = 3
+      OnClick = OpenPopupMenuHandler
+    end
     object MenuItemOpenStacking: TMenuItem
       Caption = 'Stacking'
       ImageIndex = 2

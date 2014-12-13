@@ -95,6 +95,7 @@ type
     menuItemSaveAllLua: TMenuItem;
     menuItemDumpLua: TMenuItem;
     MenuItemOpenCostumeQuest2: TMenuItem;
+    MenuItemOpenPsychonauts: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -488,7 +489,7 @@ begin
   if NodeIsSelected then
   begin
     menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
-    menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
+    menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage);
     menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or(fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
     menuItemDumpAudio.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_Audio;
     menuItemDumpLua.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_Lua;
@@ -523,7 +524,7 @@ begin
   begin
     if fExplorer.FileType[i]  = ft_GenericImage then
       menuItemSaveAllImages.Visible:=true;
-    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) then
+    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage) then
     begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
@@ -611,7 +612,14 @@ begin
   if fExplorer.FileType[Tree.FocusedNode.Index] = ft_HeaderlessDDSImage then
   begin
     panelPreviewImage.BringToFront;
-    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, true);
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS);
+  end;
+
+  //Headerless Psychonauts DDS images
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_HeaderlessPsychoDDSImage then
+  begin
+    panelPreviewImage.BringToFront;
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS_PSYCHONAUTS);
   end;
 
   //Audio types
@@ -690,6 +698,7 @@ begin
     ft_GenericImage:        ImageIndex:= 8;
     ft_DDSImage:            ImageIndex:= 8;
     ft_HeaderlessDDSImage:  ImageIndex:= 8;
+    ft_HeaderlessPsychoDDSImage:  ImageIndex:= 8;
     ft_Text:                ImageIndex:= 9;
     ft_DelimitedText:       ImageIndex:= 14;
     ft_CSVText:             ImageIndex:= 14;
@@ -772,6 +781,7 @@ begin
         ft_GenericImage:        MyPopupItems[i].ImageIndex:=8;
         ft_DDSImage:            MyPopupItems[i].ImageIndex:=8;
         ft_HeaderlessDDSImage:  MyPopupItems[i].ImageIndex:=8;
+        ft_HeaderlessPsychoDDSImage: MyPopupItems[i].ImageIndex:=8;
         ft_Text:                MyPopupItems[i].ImageIndex:=9;
         ft_CSVText:             MyPopupItems[i].ImageIndex:=14;
         ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
@@ -841,7 +851,7 @@ end;
 
 procedure TformMain.OpenPopupMenuHandler(Sender: TObject);
 var
-  SenderName: string;
+  SenderName, TempPath: string;
 begin
   SenderName := tmenuitem(sender).Name;
 
@@ -867,7 +877,16 @@ begin
     OpenDialog1.InitialDir:=GetBrutalLegendPath
   else
   if SenderName = 'MenuItemOpenBrokenAge' then
-    OpenDialog1.InitialDir:=GetBrokenAgePath;
+    OpenDialog1.InitialDir:=GetBrokenAgePath
+  else
+  if SenderName = 'MenuItemOpenPsychonauts' then
+  begin
+    TempPath := SysUtils.IncludeTrailingPathDelimiter(GetProgramFilesFolder) + 'Double Fine Productions\Psychonauts\';
+    if DirectoryExists(TempPath) then
+      OpenDialog1.InitialDir := TempPath
+    else
+      OpenDialog1.InitialDir := GetPsychonautsSteamPath;
+  end;
 
   if OpenDialog1.Execute then
     OpenFile;
@@ -951,7 +970,12 @@ begin
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, true)
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS)
+      end
+      else
+      if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS_PSYCHONAUTS)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage then
@@ -1136,7 +1160,7 @@ procedure TformMain.menuItemSaveAllDDSImagesClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
   DecodeResult: boolean;
-  Headerless: boolean;
+  DDSType: TDDSType;
 begin
   if Tree.RootNodeCount=0 then exit;
   if dlgBrowseforSaveFolder.Execute = false then exit;
@@ -1150,19 +1174,23 @@ begin
     while (tempNode <> nil) do
     begin
       if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
-        if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then //not DDS image
-        begin
-          TempNode:=Tree.GetNext(TempNode);
-          continue;
-        end;
+        if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
+          if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then //not DDS image
+            begin
+              TempNode:=Tree.GetNext(TempNode);
+              continue;
+            end;
 
       if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
-        Headerless := true
+        DDSType := DDS_HEADERLESS
       else
-        Headerless := false;
+      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessPsychoDDSImage then
+        DDSType := DDS_HEADERLESS_PSYCHONAUTS
+      else
+        DDSType := DDS_NORMAL;
 
       ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), Headerless);
+      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), DDSType);
 
       if DecodeResult = false then
       begin
@@ -1208,11 +1236,12 @@ begin
     begin
       if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
         if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
-          if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
-          begin
-            TempNode:=Tree.GetNext(TempNode);
-            continue;
-          end;
+          if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
+            if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
+            begin
+              TempNode:=Tree.GetNext(TempNode);
+              continue;
+            end;
 
       TempBmp32.Clear;
       TempBmp.Assign(nil);
@@ -1225,7 +1254,12 @@ begin
       else
       if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, true)
+        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS)
+      end
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessPsychoDDSImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS_PSYCHONAUTS)
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_GenericImage then
@@ -1398,7 +1432,7 @@ end;
 procedure TformMain.menuItemDumpDDSImageClick(Sender: TObject);
 var
   DecodeResult: boolean;
-  Headerless: boolean;
+  DDSType: TDDSType;
 begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
@@ -1414,14 +1448,17 @@ begin
     DoLog(strSavingFile + SaveDialog1.FileName);
 
     if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage then
-      Headerless := true
+      DDSType := DDS_HEADERLESS
     else
-      Headerless := false;
+    if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage then
+      DDSType := DDS_HEADERLESS_PSYCHONAUTS
+    else
+      DDSType := DDS_NORMAL;
 
 
-    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) then
+    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage)  or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) then
     begin
-      DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName), Headerless)
+      DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName), DDSType)
     end
     else
     begin

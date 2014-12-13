@@ -26,6 +26,7 @@ uses
   function GetCostumeQuest2Path: string;
   function GetBrutalLegendPath: string;
   function GetBrokenAgePath: string;
+  function GetPsychonautsSteamPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
@@ -565,6 +566,22 @@ begin
   if DirectoryExists(result) = false then
     if DirectoryExists('C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win\') then //Retail path? untested by me
       result := 'C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win';
+end;
+
+function GetPsychonautsSteamPath: string;
+const
+  ExtraPath: string = 'steamapps\Common\Psychonauts\';
+var
+  Temp: string;
+begin
+  Result := '';
+  try
+    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    result:=Temp + ExtraPath;
+    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
+  except on EJCLRegistryError do
+    result:='';
+  end;
 end;
 
 function SanitiseFileName(FileName: string): string;
