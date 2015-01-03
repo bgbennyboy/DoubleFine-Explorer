@@ -138,7 +138,7 @@ begin
       if ((result.bitrate=32) AND (result.channelmode<>3))
           OR ((result.bitrate=48) AND (result.channelmode<>3))
           OR ((result.bitrate=56) AND (result.channelmode<>3))
-          OR ((result.bitrate=80) AND (result.channelmode<>3))
+          //OR ((result.bitrate=80) AND (result.channelmode<>3)) //Brutal legend has this!
           OR ((result.bitrate=224) AND (result.channelmode=3))
           OR ((result.bitrate=256) AND (result.channelmode=3))
           OR ((result.bitrate=320) AND (result.channelmode=3))
