@@ -86,6 +86,8 @@
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <VerInfo_Release>1</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.2.1.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2014;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.2.1.0;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <ItemGroup>

@@ -17,7 +17,7 @@ interface
 
 const
   strAppName:              string = 'DoubleFine Explorer';
-  strAppVersion:           string = '1.2';
+  strAppVersion:           string = '1.2.1';
   strAppURL:               string = 'http://quickandeasysoftware.net';
   strCmdLineOpenAndDelete: string = '/OPENFILEANDDELETELATER';
 
