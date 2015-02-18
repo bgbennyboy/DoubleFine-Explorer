@@ -26,6 +26,7 @@ uses
   function GetCostumeQuest2Path: string;
   function GetBrutalLegendPath: string;
   function GetBrokenAgePath: string;
+  function GetGrimRemasteredPath: string;
   function GetPsychonautsSteamPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
@@ -396,7 +397,10 @@ begin
   else
   if FileExt = '.MP3' then result:= ft_Audio //
   else
-  if FileExt = '.WAV' then result:= ft_Audio //
+  if FileExt = '.WAV' then
+    if ActualFileExt = 'GRIMWAV' then result := ft_IMCAudio
+    else
+    result:= ft_Audio //
 
   {Psychonauts types}
   else
@@ -443,6 +447,20 @@ begin
   if FileExt = 'EncounterGroupAliasTable' then result:= ft_DelimitedText
   else
   if FileExt = 'RichPresenceData' then result:= ft_DelimitedText
+
+  {Grim Fandango Remastered types}
+  else
+  if FileExt = '.txt' then result:= ft_Text
+  else
+  if FileExt = '.LUA' then result:= ft_Lua
+  else
+  if FileExt = '.png' then result:= ft_GenericImage
+  else
+  if FileExt = '.mcb' then result:= ft_DDSImage
+  else
+  if FileExt = '.imc' then result:= ft_IMCAudio
+  else
+  if FileExt = '.lip' then result:= ft_Other
 
   else
   begin
@@ -535,6 +553,22 @@ end;
 function GetCostumeQuest2Path: string;
 const
   ExtraPath: string = 'steamapps\Common\CostumeQuest2\Win\';
+var
+  Temp: string;
+begin
+  Result := '';
+  try
+    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    result:=Temp + ExtraPath;
+    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
+  except on EJCLRegistryError do
+    result:='';
+  end;
+end;
+
+function GetGrimRemasteredPath: string;
+const
+  ExtraPath: string = 'steamapps\Common\GrimFandangoRemastered\Win\';
 var
   Temp: string;
 begin

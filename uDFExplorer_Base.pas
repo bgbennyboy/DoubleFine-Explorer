@@ -22,7 +22,7 @@ uses
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
-  uDFExplorer_PKGManager, uDFExplorer_PPAKManager;
+  uDFExplorer_PKGManager, uDFExplorer_PPAKManager, uDFExplorer_LABManager, uVimaDecode;
 
 type
   TDFExplorerBase = class
@@ -40,7 +40,7 @@ private
   function DrawImage(MemStream: TMemoryStream; OutImage: TBitmap32): boolean;
   procedure Log(Text: string);
   function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
-  function WriteHeaderlessDDSToStream(SourceStream, DestStream: TStream): boolean;
+  function WriteHeaderlessTexDDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream, DestStream: TStream): boolean;
   procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE; DestStream: TStream; IsCubemap: boolean = false);
 public
@@ -49,6 +49,7 @@ public
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
   function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType: TDDSType = DDS_NORMAL): boolean;
+  function SaveIMCToStream(FileNo: integer; DestStream: TStream): boolean;
   procedure Initialise;
   procedure SaveFile(FileNo: integer; DestDir, FileName: string; DoLog: boolean = true);
   procedure SaveFiles(DestDir: string);
@@ -86,6 +87,9 @@ begin
     else
     if Uppercase( ExtractFileExt(BundleFile) ) = '.PPF' then
       fBundle:=TPPAKManager.Create(BundleFile)
+    else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.LAB' then
+      fBundle:=TLABManager.Create(BundleFile)
     else
       fBundle:=TPAKManager.Create(BundleFile);
   except on E: EInvalidFile do
@@ -301,7 +305,7 @@ begin
     try
       case DDSType of
         DDS_NORMAL: WriteDDSToStream(Tempstream, DDSStream);
-        DDS_HEADERLESS: WriteHeaderlessDDSToStream(Tempstream, DDSStream);
+        DDS_HEADERLESS: WriteHeaderlessTexDDSToStream(Tempstream, DDSStream);
         DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
       end;
 
@@ -326,7 +330,7 @@ end;
 function TDFExplorerBase.WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
 const
   DDSMagic: cardinal = 542327876; //542327876 = 'DDS '
-  SearchOffsets: array [0..5] of integer = (0, 36, 40, 68, 144, 180);
+  SearchOffsets: array [0..6] of integer = (0, 28, 36, 40, 68, 144, 180);
 var
   DDSnum: cardinal;
   FoundPos, i: integer;
@@ -357,7 +361,7 @@ begin
   //DestStream.SaveToFile('C:\Users\Ben\Desktop\test.dds');
 end;
 
-function TDFExplorerBase.WriteHeaderlessDDSToStream(SourceStream,
+function TDFExplorerBase.WriteHeaderlessTexDDSToStream(SourceStream,
   DestStream: TStream): boolean;
 var
   TempInt,  FirstCompChunkSize, FirstChunkDecompressedSize, SecondChunkCompSize, SecondChunkDecompressedSize: integer;
@@ -720,7 +724,7 @@ begin
     try
       case DDSType of
         DDS_NORMAL: Result := WriteDDSToStream(Tempstream, SaveFile);
-        DDS_HEADERLESS: Result := WriteHeaderlessDDSToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS: Result := WriteHeaderlessTexDDSToStream(Tempstream, SaveFile);
         DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, SaveFile);
       end;
     finally
@@ -752,5 +756,22 @@ begin
   fBundle.SaveFileToStream(FileNo, DestStream);
 end;
 
+
+function TDFExplorerBase.SaveIMCToStream(FileNo: integer;
+  DestStream: TStream): boolean;
+var
+  TempStream: TExplorerMemoryStream;
+begin
+  TempStream:=TExplorerMemoryStream.Create;
+  try
+    fBundle.SaveFileToStream(FileNo, TempStream);
+    TempStream.Position:=0;
+
+    result := DecompressIMCToStream(TempStream, DestStream);
+
+  finally
+    TempStream.free;
+  end;
+end;
 
 end.

@@ -26,12 +26,15 @@ type
   public
     function ReadByte: byte;
     function ReadWord: word;
+    function ReadWordBE: word;
     function ReadDWord: longword;
+    function ReadDWordBE: longword;
     function ReadBlockName: string;
     function ReadBuffer(var Buffer; Count: longint): longint;
     function ReadString(Length: integer): string; inline;
     function ReadAnsiString(Length: integer): ansistring; inline;
     function ReadStringAlt(Length: integer): string; inline;
+    function FindFileHeader(Header: string; StartSearchAt, EndSearchAt: cardinal): longint;
     constructor Create;
     destructor Destroy; override;
 
@@ -49,11 +52,25 @@ begin
   Read(result,2);
 end;
 
+function TExplorerMemoryStream.ReadWordBE: word;
+begin
+	result:=ReadByte shl 8
+   		    +ReadByte;
+end;
+
 function TExplorerMemoryStream.ReadDWord: longword;
 begin
   Read(result,4);
 end;
 
+
+function TExplorerMemoryStream.ReadDWordBE: longword;
+begin
+	result:=ReadByte shl 24
+          +ReadByte shl 16
+   		    +ReadByte shl 8
+          +ReadByte;
+end;
 
 function TExplorerMemoryStream.ReadBlockName: string;
 begin
@@ -112,6 +129,43 @@ end;
 destructor TExplorerMemoryStream.Destroy;
 begin
   inherited;
+end;
+
+function TExplorerMemoryStream.FindFileHeader(Header: string; StartSearchAt,
+  EndSearchAt: cardinal): longint;
+var
+  HeaderLength, Index: integer;
+begin
+  Result:=-1;
+  Index:=1;
+  if EndSearchAt > self.Size then
+    EndSearchAt:=self.Size;
+
+  HeaderLength:=Length(Header);
+  if HeaderLength <= 0 then exit;
+
+
+  Self.Position:=StartSearchAt;
+  while Self.Position < EndSearchAt do
+  begin
+    if Chr(ReadByte) <> Header[Index] then
+    begin
+      if Index > 1 then
+        Self.Position := Self.Position  -1;
+
+      Index:=1;
+      continue;
+    end;
+
+    inc(Index);
+    if index > HeaderLength then
+    begin
+      Result:=Self.Position - HeaderLength;
+      exit;
+    end;
+  end;
+
+
 end;
 
 end.

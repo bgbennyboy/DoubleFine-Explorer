@@ -34,6 +34,7 @@ type
     ft_DelimitedText,
     ft_Audio,
     ft_FSBFile,
+    ft_IMCAudio,
     ft_LUA,
     ft_Other,
     ft_Unknown

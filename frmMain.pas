@@ -96,6 +96,8 @@ type
     menuItemDumpLua: TMenuItem;
     MenuItemOpenCostumeQuest2: TMenuItem;
     MenuItemOpenPsychonauts: TMenuItem;
+    MenuItemOpenGrimRemastered: TMenuItem;
+    FileSaveDialogFolder: TFileOpenDialog;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -144,6 +146,7 @@ type
     function GetCommandLineFilePath: string;
     function CaptureConsoleOutput(const ACommand, AParameters: String): ansistring;
     function DecompileLuaToString(FileNo: integer): string;
+    function SaveFolderDialog(DialogTitle: string = 'Choose a folder'): string;
     procedure OnDoneLoading(Count: integer);
     procedure DoLog(Text: string);
     procedure FreeResources;
@@ -184,7 +187,7 @@ begin
 
   dlgBrowseforSavefolder.RootDirectory:=fdDesktopDirectory;
   dlgBrowseforSavefolder.RootDirectoryPath:=GetDesktopDirectoryFolder;
-
+  FileSaveDialogFolder.DefaultFolder := GetDesktopDirectoryFolder;
   SaveDialog1.InitialDir:=GetDesktopDirectoryFolder;
   JvxSplitter1.TopLeftLimit:=Tree.Constraints.MinWidth;
 
@@ -380,6 +383,24 @@ begin
   memoLog.Lines.Add(DebugText);
 end;
 
+function TformMain.SaveFolderDialog(DialogTitle: string = 'Choose a folder'): string;
+begin
+  result := '';
+
+  if Win32MajorVersion >= 6 then //Vista and above
+  begin
+    FileSaveDialogFolder.Title := DialogTitle;
+    if FileSaveDialogFolder.Execute then
+      result := FileSaveDialogFolder.FileName;
+  end
+  else
+  begin
+    dlgBrowseForSaveFolder.Title := DialogTitle;
+    if dlgBrowseForSaveFolder.Execute then
+      result := dlgBrowseForSaveFolder.Directory;
+  end;
+end;
+
 procedure TformMain.ShowProgress(Running: boolean);
 begin
   case Running of
@@ -491,7 +512,7 @@ begin
     menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
     menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage);
     menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or(fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
-    menuItemDumpAudio.Visible:= fExplorer.FileType[Tree.focusednode.Index] = ft_Audio;
+    menuItemDumpAudio.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Audio) or (fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio);
     menuItemDumpLua.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_Lua;
   end;
 end;
@@ -531,7 +552,7 @@ begin
     end;
     if (fExplorer.FileType[i]  = ft_Text) or (fExplorer.FileType[i]  = ft_DelimitedText) or (fExplorer.FileType[i]  = ft_CSVText) then
       menuItemSaveAllText.Visible:=true;
-    if fExplorer.FileType[i]  = ft_Audio then
+    if (fExplorer.FileType[i]  = ft_Audio) or (fExplorer.FileType[i]  = ft_IMCAudio) then
       menuItemSaveAllAudio.Visible:=true;
     if fExplorer.FileType[i] = ft_Lua then
       menuItemSaveAllLua.Visible := true;
@@ -623,7 +644,8 @@ begin
   end;
 
   //Audio types
-  if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) then
+  if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) or
+     (fExplorer.FileType[Tree.FocusedNode.Index] = ft_IMCAudio) then
   begin
     panelPreviewAudio.BringToFront;
   end;
@@ -681,6 +703,14 @@ begin
     end;
   end;
 
+  //Grim Remastered IMC audio
+  if fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio then
+  begin
+    panelPreviewAudio.BringToFront;
+    StopAndFreeAudio;
+    btnPlay.Click;
+  end;
+
 end;
 
 procedure TformMain.TreeGetImageIndex(Sender: TBaseVirtualTree;
@@ -704,6 +734,7 @@ begin
     ft_CSVText:             ImageIndex:= 14;
     ft_Audio:               ImageIndex:= 12;
     ft_FSBFile:             ImageIndex:= 12;
+    ft_IMCAudio:            ImageIndex:= 12;
     ft_LUA:                 ImageIndex:= 15;
     ft_Other:               ImageIndex:= 5;
     ft_Unknown:             ImageIndex:= 5;
@@ -786,6 +817,7 @@ begin
         ft_CSVText:             MyPopupItems[i].ImageIndex:=14;
         ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
         ft_Audio:               MyPopupItems[i].ImageIndex:=12;
+        ft_IMCAudio:            MyPopupItems[i].ImageIndex:=12;
         ft_Other:               MyPopupItems[i].ImageIndex:=5;
         ft_LUA:                 MyPopupItems[i].ImageIndex:=15;
         ft_Unknown:             MyPopupItems[i].ImageIndex:=5;
@@ -886,7 +918,11 @@ begin
       OpenDialog1.InitialDir := TempPath
     else
       OpenDialog1.InitialDir := GetPsychonautsSteamPath;
-  end;
+  end
+  else
+  if SenderName = 'MenuItemOpenGrimRemastered' then
+    OpenDialog1.InitialDir:=GetGrimRemasteredPath;
+
 
   if OpenDialog1.Execute then
     OpenFile;
@@ -1075,6 +1111,7 @@ end;
 procedure TformMain.menuItemDumpAudioClick(Sender: TObject);
 var
   DecodeResult: boolean;
+  DestFile: TFileStream;
 begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
@@ -1085,7 +1122,8 @@ begin
     SaveDialog1.DefaultExt:='.mp3';
   end
   else
-  if fExplorer.FileExtension[Tree.focusednode.Index] = 'WAV' then
+  if (fExplorer.FileExtension[Tree.focusednode.Index] = 'WAV') or
+     (Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'IMC') then
   begin
     SaveDialog1.Filter:='WAV files|*.wav';
     SaveDialog1.DefaultExt:='.wav';
@@ -1108,6 +1146,22 @@ begin
     if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then
       fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName))
     else
+    if fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio then
+    begin
+      DestFile := TFileStream.Create(SaveDialog1.FileName, fmOpenWrite or fmCreate);
+      try
+        DecodeResult := fExplorer.SaveIMCToStream(Tree.focusednode.Index, DestFile);
+      finally
+        DestFile.Free;
+      end;
+
+      if DecodeResult = false then
+      begin
+        DoLog('IMC decode failed!');
+        DeleteFile(SaveDialog1.FileName);
+      end;
+    end
+    else
     begin
       DoLog('Not a recognised audio type file extension! Save cancelled.');
       DecodeResult:=false;
@@ -1123,9 +1177,13 @@ end;
 procedure TformMain.menuItemSaveAllAudioClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
+  Dir: string;
+  DestFile: TFileStream;
+  DecodeResult: boolean;
 begin
   if Tree.RootNodeCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   EnableDisableButtonsGlobal(false);
   try
@@ -1135,14 +1193,30 @@ begin
     TempNode:=Tree.GetFirst;
     while (tempNode <> nil) do
     begin
-      if fExplorer.FileType[TempNode.Index] <> ft_Audio then //not an audio file
+      if (fExplorer.FileType[TempNode.Index] <> ft_Audio) and (fExplorer.FileType[TempNode.Index] <> ft_IMCAudio) then //not an audio file
       begin
         TempNode:=Tree.GetNext(TempNode);
         continue;
       end;
 
       if fExplorer.FileType[TempNode.Index] = ft_Audio then
-        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), fExplorer.FileName[TempNode.Index]);
+        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index])
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_IMCAudio then
+      begin
+        DestFile := TFileStream.Create(IncludeTrailingPathDelimiter(Dir) + ChangeFileExt(fExplorer.FileName[TempNode.Index], '.wav'), fmOpenWrite or fmCreate);
+        try
+          DecodeResult := fExplorer.SaveIMCToStream(TempNode.Index, DestFile);
+        finally
+          DestFile.Free;
+        end;
+
+        if DecodeResult = false then
+        begin
+          DoLog('IMC decode failed in file: ' + fExplorer.FileName[TempNode.Index]);
+          DeleteFile(SaveDialog1.FileName);
+        end;
+      end;
 
       Application.ProcessMessages;
       TempNode:=Tree.GetNext(TempNode);
@@ -1161,9 +1235,11 @@ var
   TempNode: pVirtualNode;
   DecodeResult: boolean;
   DDSType: TDDSType;
+  Dir: string;
 begin
   if Tree.RootNodeCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   EnableDisableButtonsGlobal(false);
   try
@@ -1189,8 +1265,8 @@ begin
       else
         DDSType := DDS_NORMAL;
 
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), DDSType);
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), DDSType);
 
       if DecodeResult = false then
       begin
@@ -1219,9 +1295,11 @@ var
   TempBmp32: TBitmap32;
   TempNode: pVirtualNode;
   DecodeResult: boolean;
+  Dir: string;
 begin
   if Tree.RootNodeCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   TempPng:=TPngImage.Create;
   TempBmp32:=TBitmap32.Create;
@@ -1274,8 +1352,8 @@ begin
 
       TempBmp.Assign(TempBmp32);
       TempPng.Assign(TempBmp);
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      TempPng.SaveToFile(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.png'));
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+      TempPng.SaveToFile(IncludeTrailingPathDelimiter(Dir) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.png'));
 
       Application.ProcessMessages;
       TempNode:=Tree.GetNext(TempNode);
@@ -1296,9 +1374,11 @@ procedure TformMain.menuItemSaveAllLuaClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
   OutStrings: TStringList;
+  Dir: string;
 begin
   if Tree.RootNodeCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   OutStrings := TStringList.Create;
   EnableDisableButtonsGlobal(false);
@@ -1317,8 +1397,8 @@ begin
 
       OutStrings.Text :=( DecompileLuaToString(TempNode.Index) );
 
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      OutStrings.SaveToFile(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.lua'));
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+      OutStrings.SaveToFile(IncludeTrailingPathDelimiter(Dir) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.lua'));
       OutStrings.Clear;
 
       Application.ProcessMessages;
@@ -1342,9 +1422,11 @@ procedure TformMain.menuItemSaveAllTextClick(Sender: TObject);
 var
   TempStrings: TStringList;
   TempNode: pVirtualNode;
+  Dir: string;
 begin
   if Tree.RootNodeCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   TempStrings:=TStringList.Create;
   try
@@ -1374,8 +1456,8 @@ begin
       if fExplorer.FileType[TempNode.Index] = ft_DelimitedText then
         fExplorer.ReadDelimitedText(TempNode.Index, TempStrings);
 
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      TempStrings.SaveToFile( IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ChangeFileExt(fExplorer.FileName[TempNode.Index], '.txt') );
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+      TempStrings.SaveToFile( IncludeTrailingPathDelimiter(Dir) + ChangeFileExt(fExplorer.FileName[TempNode.Index], '.txt') );
       TempNode:=Tree.GetNext(TempNode);
       Application.ProcessMessages;
     end;
@@ -1392,10 +1474,12 @@ end;
 procedure TformMain.menuItemSaveAllVisibleRawClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
+  Dir: string;
 begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.VisibleCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   try
     EnableDisableButtonsGlobal(false);
@@ -1412,8 +1496,8 @@ begin
       end
       else
       begin
-        ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(dlgBrowseForSaveFolder.Directory), fExplorer.FileName[TempNode.Index]);
+        ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index]);
 
       end;
 
@@ -1473,15 +1557,18 @@ begin
 end;
 
 procedure TformMain.btnSaveAllFilesClick(Sender: TObject);
+var
+  Dir: string;
 begin
   if Tree.RootNodeCount=0 then exit;
-  if dlgBrowseforSaveFolder.Execute = false then exit;
+  Dir := SaveFolderDialog;
+  if Dir = '' then exit;
 
   ShowProgress(true);
   EnableDisableButtonsGlobal(false);
   try
     DoLog(strDumpingAllFiles);
-    fExplorer.SaveFiles(dlgBrowseForSaveFolder.Directory);
+    fExplorer.SaveFiles(Dir);
   finally
     EnableDisableButtonsGlobal(true);
     ShowProgress(False);
@@ -1585,6 +1672,7 @@ var
   ByteLength: QWord;
   SecsLength: Double;
   Seconds: Integer;
+  IMCResult: boolean;
 begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
@@ -1613,7 +1701,7 @@ begin
     end;
   end;
 
-  if fExplorer.FileType[Tree.focusednode.Index] <> ft_Audio then
+  if (fExplorer.FileType[Tree.focusednode.Index] <> ft_Audio) and (fExplorer.FileType[Tree.focusednode.Index] <> ft_IMCAudio) then
   begin
     DoLog(strErrorUnrecognisedAudioType);
     exit;
@@ -1626,8 +1714,14 @@ begin
   fAudioStream := TMemoryStream.Create;
   try
     if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then //ext = strWAVExt then
-      fExplorer.SaveFileToStream(Tree.focusednode.Index, fAudioStream); //.SaveWavToStream(Tree.focusednode.Index, fAudioStream);
-
+      fExplorer.SaveFileToStream(Tree.focusednode.Index, fAudioStream) //.SaveWavToStream(Tree.focusednode.Index, fAudioStream);
+    else
+    if fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio then
+    begin
+      IMCResult := fExplorer.SaveIMCToStream(Tree.focusednode.Index, fAudioStream);
+      if IMCResult = false then
+        DoLog('IMC Decode failed in file: ' + fExplorer.FileName[Tree.focusednode.Index]);
+    end;
 
     //fAudioStream.SaveToFile('c:\users\ben\desktop\musictest.wav');
 

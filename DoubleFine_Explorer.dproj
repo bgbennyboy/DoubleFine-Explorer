@@ -3,7 +3,7 @@
         <ProjectGuid>{DBC1D53D-88D1-41F4-823D-5C048457E471}</ProjectGuid>
         <ProjectVersion>15.4</ProjectVersion>
         <MainSource>DoubleFine_Explorer.dpr</MainSource>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <Base>True</Base>
         <TargetedPlatforms>1</TargetedPlatforms>
@@ -47,12 +47,13 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <Icon_MainIcon>DoubleFine_Explorer_Icon.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
-        <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.2.0.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2014;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.2.0.0;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.3.0.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2015;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.3.0.0;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
         <VerInfo_Locale>2057</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;$(DCC_Namespace)</DCC_Namespace>
         <SanitizedProjectName>DoubleFine_Explorer</SanitizedProjectName>
-        <VerInfo_MinorVer>2</VerInfo_MinorVer>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_UsePackage>vcl;rtl;vclx;vclimg;vclactnband;dbrtl;vcldb;vcldbx;bdertl;vcltouch;xmlrtl;dsnap;dsnapcon;TeeUI;TeeDB;Tee;adortl;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_140;Intraweb_100_140;vclie;inetdb;webdsnap;websnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DbxClientDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;Jcl;JclVcl;JvCoreD14R;JvSystemD14R;JvStdCtrlsD14R;JvAppFrmD14R;JvBandsD14R;JvDBD14R;JvDlgsD14R;JvBDED14R;JvCmpD14R;JvCryptD14R;JvCtrlsD14R;JvCustomD14R;JvDockingD14R;JvDotNetCtrlsD14R;JvEDID14R;JvGlobusD14R;JvHMID14R;JvInterpreterD14R;JvJansD14R;JvManagedThreadsD14R;JvMMD14R;JvNetD14R;JvPageCompsD14R;JvPluginD14R;JvPrintPreviewD14R;JvRuntimeDesignD14R;JvTimeFrameworkD14R;JvValidatorsD14R;JvWizardD14R;JvXPCtrlsD14R;VirtualTreesD13;tmsd2010;VclSmp;tmsexd2010;tmsxlsd2010;tmswizd2010;PngComponents;mxProtector_d12;NewAC;GR32_DSGN_RS2010;GR32_RS2010;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_DependencyCheckOutputName>DoubleFine_Explorer.exe</DCC_DependencyCheckOutputName>
@@ -86,8 +87,8 @@
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Release>1</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.2.1.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2014;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.2.1.0;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.3.0.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2015;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.3.0.0;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <ItemGroup>
@@ -110,6 +111,8 @@
         <DCCReference Include="uDFExplorer_PPAKManager.pas"/>
         <DCCReference Include="uDFExplorer_PCKManager.pas"/>
         <DCCReference Include="uDFExplorer_PKGManager.pas"/>
+        <DCCReference Include="uDFExplorer_LABManager.pas"/>
+        <DCCReference Include="uVimaDecode.pas"/>
         <RcItem Include="Resources\luadec.exe">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>RCData</ResourceType>
