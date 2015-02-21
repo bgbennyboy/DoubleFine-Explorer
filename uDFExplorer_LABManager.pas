@@ -199,7 +199,7 @@ begin
   NameDirSize := fBundle.ReadDWord; //name directory size
 
   //Parse File Records
-  for I := 0 to NumFiles do
+  for I := 0 to NumFiles -1 do
   begin
     FileObject := TDFFile.Create;
     FileObject.Compressed := false;
