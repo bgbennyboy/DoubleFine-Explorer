@@ -16,7 +16,7 @@ unit uDFExplorer_Funcs;
 interface
 
 uses
-  Sysutils, Windows, JCLRegistry, uDFExplorer_Types;
+  Sysutils, Windows, JCLRegistry, uDFExplorer_Types, Classes, StrUtils, JCLStrings;
 
   function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
   function GetCavePath: string;
@@ -27,14 +27,65 @@ uses
   function GetBrutalLegendPath: string;
   function GetBrokenAgePath: string;
   function GetGrimRemasteredPath: string;
+  function GetMassiveChalicePath: string;
   function GetPsychonautsSteamPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
   function FindParamIndex(Param: string): integer;
   procedure RemoveReadOnlyFileAttribute(FileName: string);
+  procedure GetSteamLibraryPaths(LibraryPaths: TStringList);
 
 implementation
+
+procedure GetSteamLibraryPaths(LibraryPaths: TStringList);
+var
+  SteamPath, VDFfile, CurrLine, NewPath: string;
+  Reader: TStreamReader;
+  i: integer;
+begin
+  try
+    SteamPath := IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    SteamPath := StringReplace(SteamPath, '/', '\', [rfReplaceAll, rfIgnoreCase]);
+  except on EJCLRegistryError do
+    exit;
+  end;
+
+  LibraryPaths.Add(SteamPath);
+
+  VDFfile := SteamPath + 'config\config.vdf';
+  if FileExists(VDFfile) = false then exit;
+
+
+  Reader := TStreamReader.Create(TFileStream.Create(VDFfile, fmOpenRead), TEncoding.UTF8);
+  try
+    while not Reader.EndOfStream do
+    begin
+      CurrLine := Reader.ReadLine;
+      if AnsiContainsStr(CurrLine, '"BaseInstallFolder_') then //BaseInstallFolder is the extra library
+      begin
+        for i := 1 to 5 do //Normally just BaseInstallFolder1 but perhaps more if > 2 steam libraries
+        begin
+          if AnsiContainsStr(CurrLine, '"BaseInstallFolder_' + inttostr(i) + '"') then
+            break;
+        end;
+        //ShowMessage(CurrLine);
+        NewPath := StrAfter('"BaseInstallFolder_' + inttostr(i) + '"', CurrLine);
+        NewPath := StrRemoveChars(NewPath, [#34]); //Remove the surrounding double quotes
+        NewPath := StrRemoveChars(NewPath, [#9]); //Remove any tab characters before the string
+        NewPath := IncludeTrailingPathDelimiter(NewPath); //Add the backslash to the path
+        StrReplace(NewPath, '\\', '\', [rfReplaceAll]); //Remove the \\ and replace with \
+        LibraryPaths.Add(NewPath);
+        //ShowMessage(NewPath);
+      end;
+    end;
+  finally
+    Reader.Close();
+    Reader.BaseStream.Free;
+    Reader.Free();
+  end;
+
+end;
 
 function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
 begin
@@ -397,10 +448,11 @@ begin
   else
   if FileExt = '.MP3' then result:= ft_Audio //
   else
-  if FileExt = '.WAV' then
-    if ActualFileExt = 'GRIMWAV' then result := ft_IMCAudio
+  if (FileExt = '.WAV') or (FileExt = 'WAV') then
+    if ActualFileExt = 'GRIMWAV' then
+      result := ft_IMCAudio
     else
-    result:= ft_Audio //
+      result:= ft_Audio //
 
   {Psychonauts types}
   else
@@ -462,6 +514,16 @@ begin
   else
   if FileExt = '.lip' then result:= ft_Other
 
+  {Massive Chalice types}
+  else
+  if FileExt = 'Wardrobe' then result:= ft_DelimitedText
+  else
+  if FileExt = 'ScrollingCameraSettings' then result:= ft_DelimitedText
+  else
+  if FileExt = 'StrategySettings' then result:= ft_DelimitedText
+
+
+
   else
   begin
      result:= ft_Unknown;
@@ -473,15 +535,24 @@ function GetBrokenAgePath: string;
 const
   ExtraPath: string = 'steamapps\Common\Broken Age\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 
@@ -489,15 +560,24 @@ function GetBrutalLegendPath: string;
 const
   ExtraPath: string = 'steamapps\Common\BrutalLegend\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 
@@ -505,15 +585,24 @@ function GetCavePath: string;
 const
   ExtraPath: string = 'steamapps\Common\TheCave\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 
@@ -522,15 +611,24 @@ function GetStackingPath: string;
 const
   ExtraPath: string = 'steamapps\Common\Stacking\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 
@@ -538,15 +636,24 @@ function GetCostumeQuestPath: string;
 const
   ExtraPath: string = 'steamapps\Common\costume quest\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 
@@ -554,15 +661,24 @@ function GetCostumeQuest2Path: string;
 const
   ExtraPath: string = 'steamapps\Common\CostumeQuest2\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 
@@ -570,32 +686,77 @@ function GetGrimRemasteredPath: string;
 const
   ExtraPath: string = 'steamapps\Common\GrimFandangoRemastered\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
+
+function GetMassiveChalicePath: string;
+const
+  ExtraPath: string = 'steamapps\Common\Massive Chalice\Win\';
+var
+  Paths: TStringList;
+  i: integer;
+begin
+  Result := '';
+  Paths := TStringList.Create;
+  try
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
+  end;
+end;
+
 
 function GetIronBrigadePath: string;
 const
   ExtraPath: string = 'steamapps\Common\iron brigade\Win\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
+
 
   if DirectoryExists(result) = false then
     if DirectoryExists('C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win\') then //Retail path? untested by me
@@ -606,15 +767,24 @@ function GetPsychonautsSteamPath: string;
 const
   ExtraPath: string = 'steamapps\Common\Psychonauts\';
 var
-  Temp: string;
+  Paths: TStringList;
+  i: integer;
 begin
   Result := '';
+  Paths := TStringList.Create;
   try
-    Temp:= IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
-    result:=Temp + ExtraPath;
-    Result := StringReplace(Result, '/', '\', [rfReplaceAll, rfIgnoreCase ]);
-  except on EJCLRegistryError do
-    result:='';
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
   end;
 end;
 

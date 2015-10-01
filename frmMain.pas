@@ -98,6 +98,7 @@ type
     MenuItemOpenPsychonauts: TMenuItem;
     MenuItemOpenGrimRemastered: TMenuItem;
     FileSaveDialogFolder: TFileOpenDialog;
+    MenuItemOpenMassiveChalice: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -106,9 +107,7 @@ type
     procedure OpenPopupMenuHandler(Sender: TObject);
     procedure TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-    procedure TreeGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean;
-      var ImageIndex: Integer);
+
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure menuItemDumpFileClick(Sender: TObject);
     procedure btnSaveFileClick(Sender: TObject);
@@ -133,6 +132,9 @@ type
     procedure menuItemSaveAllVisibleRawClick(Sender: TObject);
     procedure menuItemSaveAllLuaClick(Sender: TObject);
     procedure menuItemDumpLuaClick(Sender: TObject);
+    procedure TreeGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean;
+      var ImageIndex: TImageIndex);
   private
     fExplorer: TDFExplorerBase;
     fAudioStream: TMemoryStream;
@@ -713,9 +715,10 @@ begin
 
 end;
 
+
 procedure TformMain.TreeGetImageIndex(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
-  var Ghosted: Boolean; var ImageIndex: Integer);
+  var Ghosted: Boolean; var ImageIndex: TImageIndex);
 var
   FileType: TFileType;
 begin
@@ -921,7 +924,10 @@ begin
   end
   else
   if SenderName = 'MenuItemOpenGrimRemastered' then
-    OpenDialog1.InitialDir:=GetGrimRemasteredPath;
+    OpenDialog1.InitialDir:=GetGrimRemasteredPath
+  else
+  if SenderName = 'MenuItemOpenMassiveChalice' then
+    OpenDialog1.InitialDir:=GetMassiveChalicePath;
 
 
   if OpenDialog1.Execute then

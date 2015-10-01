@@ -227,8 +227,8 @@ begin
 
     //Correct the file extension
     //Dont want the . on the file extension
-    if (length(FileObject.FileExtension)>0) and (FileObject.FileExtension[1]='.') then
-      delete(FileObject.FileExtension,1,1);
+    //if (length(FileObject.FileExtension)>0) and (FileObject.FileExtension[1]='.') then
+    //  delete(FileObject.FileExtension,1,1);
 
 
     fBundle.Position := OldPosition + 4; //dont need namedir offset anymore
