@@ -29,6 +29,7 @@ type
     ft_DDSImage,
     ft_HeaderlessDDSImage,
     ft_HeaderlessPsychoDDSImage,
+    ft_HeaderlessDOTTDDSImage,
     ft_Text,
     ft_CSVText,
     ft_DelimitedText,
@@ -55,7 +56,7 @@ type
     FileName: string;
     UncompressedSize: integer;
     NameOffset: integer;
-    Offset:   integer;
+    Offset:   LongWord; //Make it unsigned int - DOTT has big uint offsets
     Size:     integer;
     FileTypeIndex: integer;
     CompressionType: integer;
@@ -68,7 +69,8 @@ type
   TDDSType = (
     DDS_NORMAL,
     DDS_HEADERLESS,
-    DDS_HEADERLESS_PSYCHONAUTS
+    DDS_HEADERLESS_PSYCHONAUTS,
+    DDS_HEADERLESS_DOTT
   );
 
   TDXTTYPE = (
@@ -108,6 +110,7 @@ type
     Bits: integer;
     Freq: integer;
   end;
+
 
 
 implementation

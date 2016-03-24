@@ -18,11 +18,12 @@ interface
 uses
   Classes, sysutils, windows, graphics,
 
-  GR32, ImagingComponents, ZlibEx,
+  GR32, ImagingComponents, ZlibEx, ZlibExGz,
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
-  uDFExplorer_PKGManager, uDFExplorer_PPAKManager, uDFExplorer_LABManager, uVimaDecode;
+  uDFExplorer_PKGManager, uDFExplorer_PPAKManager, uDFExplorer_LABManager, uDFExplorer_LPAKManager,
+  uVimaDecode;
 
 type
   TDFExplorerBase = class
@@ -34,7 +35,7 @@ private
   fBundleFilename: string;
   function GetFileName(Index: integer): string;
   function GetFileSize(Index: integer): integer;
-  function GetFileOffset(Index: integer): integer;
+  function GetFileOffset(Index: integer): LongWord;
   function GetFileType(Index: integer): TFiletype;
   function GetFileExtension(Index: integer): string;
   function DrawImage(MemStream: TMemoryStream; OutImage: TBitmap32): boolean;
@@ -42,6 +43,7 @@ private
   function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessTexDDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream, DestStream: TStream): boolean;
+  function WriteHeaderlessDOTT_DDSToStream(SourceStream, DestStream: TStream): boolean;
   procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE; DestStream: TStream; IsCubemap: boolean = false);
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
@@ -62,7 +64,7 @@ public
   property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
   property FileName[Index: integer]: string read GetFileName;
   property FileSize[Index: integer]: integer read GetFileSize;
-  property FileOffset[Index: integer]: integer read GetFileOffset;
+  property FileOffset[Index: integer]: LongWord read GetFileOffset;
   property FileType[Index: integer]: TFileType read GetFileType;
   property FileExtension[Index: integer]: string read GetFileExtension;
 end;
@@ -90,6 +92,9 @@ begin
     else
     if Uppercase( ExtractFileExt(BundleFile) ) = '.LAB' then
       fBundle:=TLABManager.Create(BundleFile)
+    else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.CLE' then
+      fBundle:=TLPAKManager.Create(BundleFile)
     else
       fBundle:=TPAKManager.Create(BundleFile);
   except on E: EInvalidFile do
@@ -307,6 +312,7 @@ begin
         DDS_NORMAL: WriteDDSToStream(Tempstream, DDSStream);
         DDS_HEADERLESS: WriteHeaderlessTexDDSToStream(Tempstream, DDSStream);
         DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
+        DDS_HEADERLESS_DOTT: WriteHeaderlessDOTT_DDSToStream(TempStream, DDSStream);
       end;
 
       DestBitmap.Clear();
@@ -359,6 +365,53 @@ begin
     Log('DDS decode failed! Couldnt find identifier!');
 
   //DestStream.SaveToFile('C:\Users\Ben\Desktop\test.dds');
+end;
+
+function TDFExplorerBase.WriteHeaderlessDOTT_DDSToStream(SourceStream,
+  DestStream: TStream): boolean;
+var
+  Height, Width, Datasize, Dataoffset: integer;
+  Temp: word;
+  TempStream: TMemoryStream;
+begin
+  //First get the width and height and data size
+  SourceStream.Position := 4;
+  Sourcestream.Read(Width, 4);
+  if fBundle.BigEndian then Width := SwapEndianDWord(Width);
+
+  Sourcestream.Read(Height, 4);
+  if fBundle.BigEndian then Height := SwapEndianDWord(Height);
+
+  Sourcestream.Seek(4, soFromCurrent); //Unknown - mipmaps maybe?
+
+  //Check here if gzipped
+  //DOTT has gzipped dxt files after the 16 byte header
+  SourceStream.Read(Temp, 2);
+  SourceStream.Seek(-2, soFromCurrent);
+  if Temp = 35615 {1F8B} then
+  begin
+    TempStream := tmemorystream.Create;
+    try
+      TempStream.CopyFrom(SourceStream, SourceStream.Size - 16);
+      Tempstream.Position := 0;
+      SourceStream.Size := 16;
+      GZDecompressStream(tempstream, sourcestream);
+
+      //GZDecompressStream(sourcestream, tempstream);
+      //TempStream.SaveToFile('c:\users\ben\desktop\decomp1');
+    finally
+      TempStream.Free;
+    end;
+  end;
+
+  Datasize := Width * Height; //Sourcestream.Size - 16; //The header on the dxt files is only 16 bytes long and is not a DDPIXELFORMAT structure
+  Dataoffset := 16;
+
+  AddDDSHeaderToStream(Width, Height, Datasize, DXT5, DestStream, false);
+  SourceStream.Position := Dataoffset;
+  DestStream.CopyFrom(SourceStream, DataSize);
+  Result := true;
+
 end;
 
 function TDFExplorerBase.WriteHeaderlessTexDDSToStream(SourceStream,
@@ -603,6 +656,11 @@ begin
   begin
     Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC;
     Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
+    {Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_RGB or DDPF_ALPHAPIXELS;
+    Header.SurfaceFormat.ddpfPixelFormat.dwRBitMask := $00FF0000;
+    Header.SurfaceFormat.ddpfPixelFormat.dwGBitMask := $0000FF00;
+    Header.SurfaceFormat.ddpfPixelFormat.dwBBitMask := $000000FF;
+    Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;}
   end;
 
 
@@ -668,7 +726,7 @@ begin
   result:=fBundle.FileName[Index];
 end;
 
-function TDFExplorerBase.GetFileOffset(Index: integer): integer;
+function TDFExplorerBase.GetFileOffset(Index: integer): LongWord;
 begin
   result:=fBundle.FileOffset[Index];
 end;
@@ -726,6 +784,7 @@ begin
         DDS_NORMAL: Result := WriteDDSToStream(Tempstream, SaveFile);
         DDS_HEADERLESS: Result := WriteHeaderlessTexDDSToStream(Tempstream, SaveFile);
         DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, SaveFile);
+        DDS_HEADERLESS_DOTT: Result := WriteHeaderlessDOTT_DDSToStream(Tempstream, SaveFile);
       end;
     finally
       SaveFile.Free;

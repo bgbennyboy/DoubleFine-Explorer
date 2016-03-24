@@ -29,10 +29,11 @@ uses
   frmAbout in 'frmAbout.pas' {Aboutfrm},
   uDFExplorer_BaseBundleManager in 'uDFExplorer_BaseBundleManager.pas',
   uDFExplorer_PPAKManager in 'uDFExplorer_PPAKManager.pas',
-  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas',
+  uDFExplorer_LPAKManager in 'uDFExplorer_LPAKManager.pas',
   uDFExplorer_PKGManager in 'uDFExplorer_PKGManager.pas',
   uDFExplorer_LABManager in 'uDFExplorer_LABManager.pas',
-  uVimaDecode in 'uVimaDecode.pas';
+  uVimaDecode in 'uVimaDecode.pas',
+  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas';
 
 {$R *.res}
 

@@ -29,6 +29,7 @@ uses
   function GetGrimRemasteredPath: string;
   function GetMassiveChalicePath: string;
   function GetPsychonautsSteamPath: string;
+  function GetDOTTPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
@@ -522,6 +523,35 @@ begin
   else
   if FileExt = 'StrategySettings' then result:= ft_DelimitedText
 
+  {DOTT types}
+  else
+  if FileExt = 'png' then result:= ft_GenericImage
+  else
+  if FileExt = '000' then result:= ft_Other
+  else
+  if FileExt = '001' then result:= ft_Other
+  else
+  if FileExt = 'dxt' then result:= ft_HeaderlessDOTTDDSImage
+  else
+  if FileExt = 'ftx' then result:= ft_DDSImage
+  else
+  if FileExt = 'xml' then result:= ft_Other
+  else
+  if FileExt = 'sou' then result:= ft_Other
+  else
+  if FileExt = 'dir' then result:= ft_Other
+  else
+  if FileExt = 'bin' then result:= ft_Other
+  else
+  if FileExt = 'csv' then result:= ft_CSVText
+  else
+  if FileExt = 'gl' then result:= ft_Other
+  else
+  if FileExt = 'info' then result:= ft_Other
+  else
+  if FileExt = 'lfl' then result:= ft_Other
+  else
+  if FileExt = 'txt' then result:= ft_Text
 
 
   else
@@ -766,6 +796,31 @@ end;
 function GetPsychonautsSteamPath: string;
 const
   ExtraPath: string = 'steamapps\Common\Psychonauts\';
+var
+  Paths: TStringList;
+  i: integer;
+begin
+  Result := '';
+  Paths := TStringList.Create;
+  try
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
+  end;
+end;
+
+function GetDOTTPath: string;
+const
+  ExtraPath: string = 'steamapps\Common\Day of the Tentacle Remastered\';
 var
   Paths: TStringList;
   i: integer;

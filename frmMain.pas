@@ -99,6 +99,7 @@ type
     MenuItemOpenGrimRemastered: TMenuItem;
     FileSaveDialogFolder: TFileOpenDialog;
     MenuItemOpenMassiveChalice: TMenuItem;
+    MenuItemOpenDOTT: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -158,6 +159,7 @@ type
     procedure EnableDisableButtons_TreeDependant;
     procedure AddFiletypePopupItems;
     procedure FilterNodesByFileExt(FileExt: string);
+    procedure FilterNodesByFileExtArray(Extensions: array of string);
     procedure FileTypePopupMenuHandler(Sender: TObject);
     procedure OpenFile;
     procedure UpdateSaveAllMenu;
@@ -170,6 +172,22 @@ type
 var
   formMain: TformMain;
   MyPopUpItems: array of TMenuItem;
+
+const
+   arrSavedGameTypes: array[0..98] of string =(
+     '101', '102', '103', '104', '105', '106', '107', '108',
+     '109', '110', '111', '112', '113', '114', '115', '116',
+     '117', '118', '119', '120', '121', '122', '123', '124',
+     '125', '126', '127', '128', '129', '130', '131', '132',
+     '133', '134', '135', '136', '137', '138', '139', '140',
+     '141', '142', '143', '144', '145', '146', '147', '148',
+     '149', '150', '151', '152', '153', '154', '155', '156',
+     '157', '158', '159', '160', '161', '162', '163', '164',
+     '165', '166', '167', '168', '169', '170', '171', '172',
+     '173', '174', '175', '176', '177', '178', '179', '180',
+     '181', '182', '183', '184', '185', '186', '187', '188',
+     '189', '190', '191', '192', '193', '194', '195', '196',
+     '197', '198', '199');
 
 implementation
 
@@ -512,7 +530,7 @@ begin
   if NodeIsSelected then
   begin
     menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
-    menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage);
+    menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage);
     menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or(fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
     menuItemDumpAudio.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Audio) or (fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio);
     menuItemDumpLua.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_Lua;
@@ -547,7 +565,7 @@ begin
   begin
     if fExplorer.FileType[i]  = ft_GenericImage then
       menuItemSaveAllImages.Visible:=true;
-    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage) then
+    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage)then
     begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
@@ -645,6 +663,13 @@ begin
     fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS_PSYCHONAUTS);
   end;
 
+  //Headerless DOTT DDS images
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_HeaderlessDOTTDDSImage then
+  begin
+    panelPreviewImage.BringToFront;
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS_DOTT);
+  end;
+
   //Audio types
   if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) or
      (fExplorer.FileType[Tree.FocusedNode.Index] = ft_IMCAudio) then
@@ -732,6 +757,7 @@ begin
     ft_DDSImage:            ImageIndex:= 8;
     ft_HeaderlessDDSImage:  ImageIndex:= 8;
     ft_HeaderlessPsychoDDSImage:  ImageIndex:= 8;
+    ft_HeaderlessDOTTDDSImage:  ImageIndex:= 8;
     ft_Text:                ImageIndex:= 9;
     ft_DelimitedText:       ImageIndex:= 14;
     ft_CSVText:             ImageIndex:= 14;
@@ -795,9 +821,19 @@ begin
       tempStr:= fExplorer.FileExtension[i];
 
       if (FileTypes.IndexOf(tempStr)=-1) and (tempStr > '' ) then
+      begin
+        if StrIndex(tempStr, arrSavedGameTypes) > -1 then //Its a saved game filetype
+        begin
+          if FileTypes.IndexOf(strViewSavedGameFiles) = -1 then //If doesnt already exist
+            FileTypes.Add(strViewSavedGameFiles) //Add the saved games menu item
+        end
+
+        else //Just add the file extension
           FileTypes.Add(tempStr);
+      end;
     end;
     FileTypes.Sort;
+
 
     SetLength(MyPopupItems, Filetypes.Count + 2); //+2 for 'all files' and line break
     for i:=low(mypopupitems) to high(mypopupitems) -2 do
@@ -816,6 +852,7 @@ begin
         ft_DDSImage:            MyPopupItems[i].ImageIndex:=8;
         ft_HeaderlessDDSImage:  MyPopupItems[i].ImageIndex:=8;
         ft_HeaderlessPsychoDDSImage: MyPopupItems[i].ImageIndex:=8;
+        ft_HeaderlessDOTTDDSImage: MyPopupItems[i].ImageIndex:=8;
         ft_Text:                MyPopupItems[i].ImageIndex:=9;
         ft_CSVText:             MyPopupItems[i].ImageIndex:=14;
         ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
@@ -879,7 +916,28 @@ begin
   end;
 end;
 
+procedure TformMain.FilterNodesByFileExtArray(Extensions: array of string);
+var
+  TempNode: PVirtualNode;
+begin
+  if Tree.RootNodeCount=0 then exit;
 
+  Tree.BeginUpdate;
+  try
+    TempNode:=Tree.GetFirst;
+    while (tempNode <> nil) do
+    begin
+      if StrIndex(fExplorer.FileExtension[TempNode.Index], Extensions) > -1 then
+       Tree.IsVisible[TempNode]:=true
+      else
+        Tree.IsVisible[TempNode]:=false;
+
+      TempNode:=Tree.GetNext(TempNode);
+    end;
+  finally
+    Tree.EndUpdate;
+  end;
+end;
 
 
 {******************     Popup Handlers     ******************}
@@ -927,8 +985,10 @@ begin
     OpenDialog1.InitialDir:=GetGrimRemasteredPath
   else
   if SenderName = 'MenuItemOpenMassiveChalice' then
-    OpenDialog1.InitialDir:=GetMassiveChalicePath;
-
+    OpenDialog1.InitialDir:=GetMassiveChalicePath
+  else
+  if SenderName = 'MenuItemOpenDOTT' then
+    OpenDialog1.InitialDir:=GetDOTTPath;
 
   if OpenDialog1.Execute then
     OpenFile;
@@ -950,6 +1010,9 @@ begin
     StrReplace(tempStr, '&', '',[rfIgnoreCase, rfReplaceAll]);
     if tempStr = strViewAllFiles then
       FilterNodesByFileExt('')
+    else
+    if tempStr = strViewSavedGameFiles then
+      FilterNodesByFileExtArray(arrSavedGameTypes)
     else
       FilterNodesByFileExt(tempStr);
 
@@ -1018,6 +1081,11 @@ begin
       if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage then
       begin
         DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS_PSYCHONAUTS)
+      end
+      else
+      if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS_DOTT)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage then
@@ -1257,17 +1325,21 @@ begin
     begin
       if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
         if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
-          if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then //not DDS image
-            begin
-              TempNode:=Tree.GetNext(TempNode);
-              continue;
-            end;
+          if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDOTTDDSImage) then
+            if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then //not DDS image
+              begin
+                TempNode:=Tree.GetNext(TempNode);
+                continue;
+              end;
 
       if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
         DDSType := DDS_HEADERLESS
       else
       if fExplorer.FileType[TempNode.Index] = ft_HeaderlessPsychoDDSImage then
         DDSType := DDS_HEADERLESS_PSYCHONAUTS
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDOTTDDSImage then
+        DDSType := DDS_HEADERLESS_DOTT
       else
         DDSType := DDS_NORMAL;
 
@@ -1321,11 +1393,12 @@ begin
       if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
         if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
           if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
-            if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
-            begin
-              TempNode:=Tree.GetNext(TempNode);
-              continue;
-            end;
+            if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDOTTDDSImage) then
+              if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
+              begin
+                TempNode:=Tree.GetNext(TempNode);
+                continue;
+              end;
 
       TempBmp32.Clear;
       TempBmp.Assign(nil);
@@ -1344,6 +1417,11 @@ begin
       if fExplorer.FileType[TempNode.Index] = ft_HeaderlessPsychoDDSImage then
       begin
         DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS_PSYCHONAUTS)
+      end
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDOTTDDSImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS_DOTT)
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_GenericImage then
@@ -1543,10 +1621,13 @@ begin
     if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage then
       DDSType := DDS_HEADERLESS_PSYCHONAUTS
     else
+    if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage then
+      DDSType := DDS_HEADERLESS_DOTT
+    else
       DDSType := DDS_NORMAL;
 
 
-    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage)  or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) then
+    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage)  or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage)  or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) then
     begin
       DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName), DDSType)
     end

@@ -67,7 +67,8 @@
         <DCC_K>false</DCC_K>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <Icon_MainIcon>DoubleFine_Explorer_Icon.ico</Icon_MainIcon>
+        <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.3.2.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2015;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.3.2.0;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
+        <VerInfo_Release>2</VerInfo_Release>
         <DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
@@ -88,7 +89,6 @@
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Release>1</VerInfo_Release>
         <VerInfo_Keys>CompanyName=Quick and Easy Software;FileDescription=DoubleFine Explorer;FileVersion=1.3.1.0;InternalName=DoubleFine Explorer;LegalCopyright=Bennyboy 2015;LegalTrademarks=;OriginalFilename=DoubleFine Explorer.exe;ProductName=DoubleFine Explorer;ProductVersion=1.3.1;Comments=http://quickandeasysoftware.net</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
@@ -110,10 +110,11 @@
         </DCCReference>
         <DCCReference Include="uDFExplorer_BaseBundleManager.pas"/>
         <DCCReference Include="uDFExplorer_PPAKManager.pas"/>
-        <DCCReference Include="uDFExplorer_PCKManager.pas"/>
+        <DCCReference Include="uDFExplorer_LPAKManager.pas"/>
         <DCCReference Include="uDFExplorer_PKGManager.pas"/>
         <DCCReference Include="uDFExplorer_LABManager.pas"/>
         <DCCReference Include="uVimaDecode.pas"/>
+        <DCCReference Include="uDFExplorer_PCKManager.pas"/>
         <RcItem Include="Resources\luadec.exe">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>RCData</ResourceType>

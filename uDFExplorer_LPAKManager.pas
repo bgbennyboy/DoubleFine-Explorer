@@ -12,11 +12,10 @@
 }
 
 {
-  LAB Files - Grim Remastered (plus old versions of Grim Fandango and EMI)
+  Used in DOTT Remastered - same format as used in MI Special Editions
 }
 
-
-unit uDFExplorer_lABManager;
+unit uDFExplorer_LPAKManager;
 
 interface
 
@@ -26,7 +25,7 @@ uses
   uDFExplorer_Funcs, uZlib;
 
 type
-  TLABManager = class (TBundleManager)
+  TLPAKManager = class (TBundleManager)
   private
     fBigEndian: boolean;
   protected
@@ -40,7 +39,6 @@ type
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     procedure Log(Text: string); override;
-    procedure ParseLAB;
   public
     BundleFiles: TObjectList;
     constructor Create(ResourceFile: string); override;
@@ -66,7 +64,7 @@ implementation
 { TBundleManager }
 
 
-constructor TLABManager.Create(ResourceFile: string);
+constructor TLPAKManager.Create(ResourceFile: string);
 begin
   try
     fBundle:=TExplorerFileStream.Create(ResourceFile);
@@ -81,7 +79,7 @@ begin
     raise EInvalidFile.Create( strErrInvalidFile );
 end;
 
-destructor TLABManager.Destroy;
+destructor TLPAKManager.Destroy;
 begin
   if BundleFiles <> nil then
   begin
@@ -95,22 +93,30 @@ begin
   inherited;
 end;
 
-function TLABManager.DetectBundle: boolean;
+function TLPAKManager.DetectBundle: boolean;
 var
-  BlockHeader: integer;
+  Blockname: string;
 begin
   Result := false;
-  BlockHeader := fBundle.ReadDWord;
+  BlockName := fBundle.ReadBlockName;
 
-  if BlockHeader = 1312964940 then  //LABN
+  if BlockName = 'KAPL' then
   begin
     Result := true;
     fBundle.BigEndian := false;
     fBigEndian := false;
   end
+  else
+  if BlockName = 'LPAK' then
+  begin
+    Result := true;
+    fBundle.BigEndian := true;
+    fBigEndian := true;
+  end;
+
 end;
 
-function TLABManager.GetFileExtension(Index: integer): string;
+function TLPAKManager.GetFileExtension(Index: integer): string;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
@@ -120,7 +126,7 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).FileExtension;
 end;
 
-function TLABManager.GetFileName(Index: integer): string;
+function TLPAKManager.GetFileName(Index: integer): string;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
@@ -130,7 +136,7 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).FileName;
 end;
 
-function TLABManager.GetFileOffset(Index: integer): LongWord;
+function TLPAKManager.GetFileOffset(Index: integer): LongWord;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
@@ -140,7 +146,7 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).offset;
 end;
 
-function TLABManager.GetFilesCount: integer;
+function TLPAKManager.GetFilesCount: integer;
 begin
   if BundleFiles <> nil then
     result:=BundleFiles.Count
@@ -148,7 +154,7 @@ begin
     result:=0;
 end;
 
-function TLABManager.GetFileSize(Index: integer): integer;
+function TLPAKManager.GetFileSize(Index: integer): integer;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
@@ -158,7 +164,7 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).size;
 end;
 
-function TLABManager.GetFileType(Index: integer): TFileType;
+function TLPAKManager.GetFileType(Index: integer): TFileType;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
@@ -168,82 +174,111 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).FileType;
 end;
 
-procedure TLABManager.Log(Text: string);
+procedure TLPAKManager.Log(Text: string);
 begin
   if assigned(fOnDebug) then fOnDebug(Text);
 end;
 
-procedure TLABManager.ParseFiles;
+
+
+procedure TLPAKManager.ParseFiles;
+var
+  startOfFileEntries, startOfFileNames, startOfData,
+  sizeOfIndex, sizeOfFileEntries, sizeOfFileNames, sizeOfData: integer;
+
+  numFiles, i, nameOffs, currNameOffset: integer;
+  FileExt, FileName: string;
+  FileObject: TDFFile;
+  FileType: TFileType;
+const
+  sizeOfFileRecord: integer = 20;
 begin
- if fBigEndian then //All LE reading auto converted to BE
+{	PakHeader	= record
+    DWORD magic;                (* KAPL -> "LPAK" *)
+    DWORD version;
+    DWORD startOfIndex;         (* -> 1 DWORD per file *)
+    DWORD startOfFileEntries;   (* -> 5 DWORD per file *)
+    DWORD startOfFileNames;     (* zero-terminated string *)
+    DWORD startOfData;
+    DWORD sizeOfIndex;
+    DWORD sizeOfFileEntries;
+    DWORD sizeOfFileNames;
+    DWORD sizeOfData;
+ end;
+
+	PakFileEntry	= record
+    DWORD fileDataPos;          (* + startOfData *)
+    DWORD fileNamePos;          (* + startOfFileNames *)
+    DWORD dataSize;
+    DWORD dataSize2;            (* real size? (always =dataSize) *)
+    DWORD compressed;           (* compressed? (always 0) *)
+ end;
+ PakFileEntry	=	PakFileEntry;}
+
+ if fBigEndian then  //All LE reading auto converted to BE
     Log('Detected as : big endian');
 
 
-  ParseLAB;
-end;
+  //Read header
+  fBundle.Position := 12;
+  startOfFileEntries := fBundle.ReadDWord;
+  startOfFileNames   := fBundle.ReadDWord;
+  startOfData        := fBundle.ReadDWord;
+  sizeOfIndex        := fBundle.ReadDWord;
+  sizeOfFileEntries  := fBundle.ReadDWord;
+  sizeOfFileNames    := fBundle.ReadDWord;
+  sizeOfData         := fBundle.ReadDWord;
 
-procedure TLABManager.ParseLAB;
-var
-  NumFiles, NameDirSize, i, OldPosition, FilenameOffset: integer;
-  FileObject: TDFFile;
-begin
-  fBundle.Position:=0;
-  if fBundle.ReadBlockName <> 'LABN' then
+  numFiles :=  sizeOfFileEntries div sizeOfFileRecord;
+
+  currNameOffset := 0;
+
+  //Parse files
+  for I := 0 to numFiles - 1 do
   begin
-    raise EInvalidFile.Create( strErrInvalidFile );
-  end;
+    fBundle.Position  := startOfFileEntries + (sizeOfFileRecord * i);
+    FileObject        := TDFFile.Create;
+    FileObject.Offset := fBundle.ReadDWord + startOfData;
+    nameOffs          := fBundle.ReadDWord;
+    FileObject.Size   := fBundle.ReadDWord;
+    fBundle.Seek(4, soFromCurrent); // Compressed size?
+    if fBundle.ReadDWord <> 0 then
+    begin
+      Log('Compressed file found in file ' +  inttostr(i) + ' at offset ' + inttostr(FileObject.Offset) + ' hurry up and add support for this!');
+      FileObject.Compressed := true;
+    end;
 
-  //Read Header
-  fBundle.seek(4, sofromcurrent); //version
-  NumFiles := fBundle.ReadDWord;     //number of files
-  NameDirSize := fBundle.ReadDWord; //name directory size
-
-  //Parse File Records
-  for I := 0 to NumFiles -1 do
-  begin
-    FileObject := TDFFile.Create;
-    FileObject.Compressed := false;
-    FileObject.CompressionType := 0;
-    FileObject.FileTypeIndex := -1;
-
-    FilenameOffset := fBundle.ReadDWord; //Offset of name in name directory
-    fBundle.Seek(-4, soFromCurrent);
-
-    //Now get filename and filetype
-    OldPosition := fBundle.Position;
-    fBundle.Position := fBundle.Position + ((NumFiles - i) * 16) + FilenameOffset; //Should be at the filename now
-    FileObject.FileName := PChar(fBundle.ReadString(100)); //Null terminated - wont actually be 100 chars
-    FileObject.FileExtension := ExtractFileExt( FileObject.FileName );
-
-    //Get the file type
-    //Big hack for Grim Vima wav files
-    if Uppercase(FileObject.FileExtension) = '.WAV' then
-      FileObject.FileType := GetFileTypeFromFileExtension( FileObject.FileExtension, 'GRIMWAV')
-    else
-      FileObject.FileType := GetFileTypeFromFileExtension( FileObject.FileExtension);
-
-    if (FileObject.FileType = ft_Unknown) and (FileObject.FileExtension <> '') then
-      Log('Unknown file type ' + FileObject.FileExtension);
+    //Get filename from filenames table
+    //In MI2SE - nameOffs is broken - so just ignore it - luckily filenames are stored in the same order as the entries in the file records
+    fBundle.Position    := startOfFileNames + currNameOffset;
+    FileName := PChar(fBundle.ReadString(255));
+    inc(currNameOffset, length(FileName) + 1); //+1 because each filename is null terminated
+    FileObject.FileName := FileName;
 
     //Correct the file extension
-    //Dont want the . on the file extension
-    //if (length(FileObject.FileExtension)>0) and (FileObject.FileExtension[1]='.') then
-    //  delete(FileObject.FileExtension,1,1);
+    FileExt := ExtractFileExt(FileName); //Dont want the . on the file extension
+    if (length(FileExt)>0) and (FileExt[1]='.') then
+      delete(FileExt,1,1);
+
+    FileObject.FileExtension := FileExt;
 
 
-    fBundle.Position := OldPosition + 4; //dont need namedir offset anymore
-    FileObject.Offset := fBundle.ReadDWord;
-    FileObject.Size := fBundle.ReadDWord;
-    fBundle.Seek(4, soFromCurrent);
+    //Correct the file type
+    FileType := GetFileTypeFromFileExtension( FileExt, Uppercase(ExtractFileExt(Filename)));
+    //if (FileType = ft_Unknown) and (ExtractFileExt(FileName) <> '') then
+    //  Log('Unknown file type ' + FileExt);
+
+    FileObject.FileType := FileType;
 
     BundleFiles.Add(FileObject);
   end;
 
+
   if (Assigned(FOnDoneLoading)) then
-	  FOnDoneLoading(NumFiles);
+	  FOnDoneLoading(numFiles);
 end;
 
-procedure TLABManager.SaveFile(FileNo: integer; DestDir, FileName: string);
+procedure TLPAKManager.SaveFile(FileNo: integer; DestDir, FileName: string);
 var
   SaveFile: TFileStream;
 begin
@@ -268,7 +303,7 @@ begin
 
 end;
 
-procedure TLABManager.SaveFiles(DestDir: string);
+procedure TLPAKManager.SaveFiles(DestDir: string);
 var
   i: integer;
   SaveFile: TFileStream;
@@ -288,7 +323,7 @@ begin
 
 end;
 
-procedure TLABManager.SaveFileToStream(FileNo: integer; DestStream: TStream);
+procedure TLPAKManager.SaveFileToStream(FileNo: integer; DestStream: TStream);
 var
   Ext: string;
   TempStream: TMemoryStream;
@@ -309,7 +344,18 @@ begin
 
   fBundle.Seek(TDFFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
 
+  //TEMPORARY HACK FOR DECOMPRESSING TEX TEXTURES*************************************************************************
+  {if TDFFile(BundleFiles.Items[FileNo]).FileExtension = 'tex' then
+  begin
+    TDFFile(BundleFiles.Items[FileNo]).Compressed := true;
+    fBundle.Seek(16, soFromCurrent);
+    TDFFile(BundleFiles.Items[FileNo]).UncompressedSize := fBundle.ReadDWord;
+    fBundle.Seek(12, soFromCurrent);
+  end;}
+  //***********************************************************************************************************************
 
+
+  //if TDFFile(BundleFiles.Items[FileNo]).UncompressedSize <> TDFFile(BundleFiles.Items[FileNo]).Size then
   if TDFFile(BundleFiles.Items[FileNo]).Compressed then
   begin
     TempStream := tmemorystream.Create;

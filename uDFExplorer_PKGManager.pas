@@ -36,7 +36,7 @@ type
     function GetFilesCount: integer; override;
     function GetFileName(Index: integer): string; override;
     function GetFileSize(Index: integer): integer; override;
-    function GetFileOffset(Index: integer): integer; override;
+    function GetFileOffset(Index: integer): LongWord; override;
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     procedure Log(Text: string); override;
@@ -52,7 +52,7 @@ type
     property Count: integer read GetFilesCount;
     property FileName[Index: integer]: string read GetFileName;
     property FileSize[Index: integer]: integer read GetFileSize;
-    property FileOffset[Index: integer]: integer read GetFileOffset;
+    property FileOffset[Index: integer]: LongWord read GetFileOffset;
     property FileType[Index: integer]: TFileType read GetFileType;
     property FileExtension[Index: integer]: string read GetFileExtension;
     property BigEndian: boolean read fBigEndian;
@@ -130,12 +130,12 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).FileName;
 end;
 
-function TPKGManager.GetFileOffset(Index: integer): integer;
+function TPKGManager.GetFileOffset(Index: integer): LongWord;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
      (index > GetFilesCount) then
-    result:=-1
+    result:=0
   else
      result:=TDFFile(BundleFiles.Items[Index]).offset;
 end;
