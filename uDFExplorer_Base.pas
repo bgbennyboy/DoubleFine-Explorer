@@ -18,7 +18,7 @@ interface
 uses
   Classes, sysutils, windows, graphics,
 
-  GR32, ImagingComponents, ZlibEx, ZlibExGz,
+  GR32, ImagingComponents, ZlibEx, ZlibExGz, ImagingTypes, Imaging,
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
@@ -41,6 +41,7 @@ private
   function DrawImage(MemStream: TMemoryStream; OutImage: TBitmap32): boolean;
   procedure Log(Text: string);
   function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
+  function WriteDOTTFontToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessTexDDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessDOTT_DDSToStream(SourceStream, DestStream: TStream): boolean;
@@ -49,6 +50,8 @@ public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
   destructor Destroy; override;
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
+  function DrawImageDOTTFont(FileIndex: integer; DestBitmap: TBitmap32): boolean;
+  function DrawImageDOTTCostume(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
   function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType: TDDSType = DDS_NORMAL): boolean;
   function SaveIMCToStream(FileNo: integer; DestStream: TStream): boolean;
@@ -294,6 +297,196 @@ begin
   end;
 end;
 
+function TDFExplorerBase.DrawImageDOTTCostume(FileIndex: integer;
+  DestBitmap: TBitmap32): boolean;
+var
+  TempStream, TempStreamJustMXT5, ImageStream: TExplorerMemoryStream;
+  HeaderIndex: integer;
+begin
+  Result:=false;
+
+  TempStream:=TExplorerMemoryStream.Create;
+  try
+    fBundle.SaveFileToStream(FileIndex, TempStream);
+    TempStream.Position:=0;
+
+    //Not all DOTT XML costumes have an image inside them but many do
+    HeaderIndex := FindFileHeader(TempStream, 0, 3000, 'MXT5');
+    if HeaderIndex = -1 then
+    begin
+      Log('XML doesnt contain costume image (not all of them do) ' + fBundle.FileName[FileIndex]);
+      DestBitmap.SetSize(0,0);
+      Exit;
+    end;
+
+
+    TempStreamJustMXT5 := TExplorerMemoryStream.Create;
+    try
+      //Copy it out to a new stream which we can pass to the decoder - it expects a stream thats just a MXT5 texture with no additional header
+      TempStream.Position := HeaderIndex;
+      TempStreamJustMXT5.CopyFrom(TempStream, TempStream.Size - TempStream.Position);
+      TempStream.Clear;
+      TempStreamJustMXT5.Position := 0;
+
+      ImageStream:=TExplorerMemoryStream.Create;
+      try
+        if WriteHeaderlessDOTT_DDSToStream(TempStreamJustMXT5, ImageStream) = false then
+        begin
+          Log('Image Decode failed! ' + fBundle.FileName[FileIndex]);
+          Exit;
+        end;
+
+        DestBitmap.Clear();
+        destbitmap.CombineMode:=cmBlend;
+        destBitmap.DrawMode:=dmOpaque;
+        if DrawImage(ImageStream, DestBitmap)=false then
+        begin
+          Log('Image Decode failed! ' + fBundle.FileName[FileIndex]);
+          Exit;
+        end;
+
+        Result:=true;
+      finally
+        ImageStream.Free;
+      end;
+    finally
+      TempStreamJustMXT5.Free;
+    end;
+  finally
+    TempStream.Free;
+  end;
+
+end;
+
+function TDFExplorerBase.DrawImageDOTTFont(FileIndex: integer;
+  DestBitmap: TBitmap32): boolean;
+var
+  TempStream, ImageStream: TExplorerMemoryStream;
+begin
+  Result:=false;
+
+  TempStream:=TExplorerMemoryStream.Create;
+  try
+    fBundle.SaveFileToStream(FileIndex, TempStream);
+    TempStream.Position:=0;
+
+    ImageStream:=TExplorerMemoryStream.Create;
+    try
+      if WriteDOTTFontToStream(TempStream, ImageStream) = false then
+      begin
+        Log('Image Decode failed! ' + fBundle.FileName[FileIndex]);
+        Exit;
+      end;
+
+      DestBitmap.Clear();
+      destbitmap.CombineMode:=cmBlend;
+      destBitmap.DrawMode:=dmOpaque;
+      if DrawImage(ImageStream, DestBitmap)=false then
+      begin
+        Log('Image Decode failed! ' + fBundle.FileName[FileIndex]);
+        Exit;
+      end;
+
+      Result:=true;
+    finally
+      ImageStream.Free;
+    end;
+  finally
+    TempStream.Free;
+  end;
+
+end;
+
+function TDFExplorerBase.WriteDOTTFontToStream(SourceStream,
+  DestStream: TStream): boolean;
+var
+  BlockHeader: dword;
+  Temp, Height, Width: word;
+  Datasize, Dataoffset: integer;
+  TempStream: TMemoryStream;
+  Img: TImageData;
+begin
+{
+  DOTT FTX format is similar to DOTT '.tex' textures
+  4 bytes FTX1 or FXT2
+  2 bytes width
+  2 bytes height
+  4 bytes uncompressed texture size
+  4 bytes unknown
+  x bytes Gzipped texture
+
+  Texture isnt DXT -
+    For FXT1 its 8bpp greyscale or RGB233 (unsure which probably greyscale as its fonts)
+    For FXT2 its 16bpp
+}
+  Result := false;
+  SourceStream.Position := 0;
+  SourceStream.Read(BlockHeader, 4);
+  if (BlockHeader = 827872326) or (BlockHeader = 844649542) then //FXT1 FXT2
+  else
+  begin
+    Log('Unrecognised header in DOTT font texture!');
+    exit;
+  end;
+
+  Sourcestream.Read(Width, 2);
+  if fBundle.BigEndian then Width := SwapEndianWord(Width);
+
+  Sourcestream.Read(Height, 2);
+  if fBundle.BigEndian then Height := SwapEndianWord(Height);
+
+  Sourcestream.Seek(4, soFromCurrent); //Uncompressed size
+  Sourcestream.Seek(4, soFromCurrent); //Unknown
+
+  //Check here if gzipped. DOTT always? has a gzipped dxt texture after the header
+  SourceStream.Read(Temp, 2);
+  SourceStream.Seek(-2, soFromCurrent);
+  if Temp = 35615 {1F8B} then
+  begin
+    TempStream := TMemoryStream.Create;
+    try
+      TempStream.CopyFrom(SourceStream, SourceStream.Size - 16);
+      Tempstream.Position := 0;
+      SourceStream.Size := 16;
+      GZDecompressStream(tempstream, sourcestream);
+      {GZDecompressStream(sourcestream, tempstream);
+      TempStream.SaveToFile('c:\users\ben\desktop\decomp1');}
+    finally
+      TempStream.Free;
+    end;
+  end;
+
+  if BlockHeader = 827872326 then //FXT1
+    Datasize := Width * Height
+  else if BlockHeader = 844649542 then //FXT2
+    Datasize := (Width * Height) *2
+  else
+    Datasize := 0;
+
+  Dataoffset := 16;
+  SourceStream.Position := Dataoffset;
+  DestStream.Position := 0;
+  DestStream.CopyFrom(SourceStream, DataSize);
+
+
+  InitImage(Img);
+  try
+  if BlockHeader = 827872326 then //FXT1
+      NewImage(Width, Height, ifGray8, Img)
+  else if BlockHeader = 844649542 then //FXT2
+    NewImage(Width, Height, ifA1R5G5B5, Img);
+
+    DestStream.Position := 0;
+    DestStream.Read(Img.Bits^, Datasize);
+    DestStream.Size := 0;
+    SaveImageToStream('PNG', DestStream, Img);
+    Result := true;
+  finally
+   FreeImage(Img);
+  end;
+
+end;
+
 function TDFExplorerBase.DrawImageDDS(FileIndex: integer;
   DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
 var
@@ -373,7 +566,22 @@ var
   Height, Width, Datasize, Dataoffset: integer;
   Temp: word;
   TempStream: TMemoryStream;
+  Img: TImageData;
+  Info: TImageFormatInfo;
 begin
+{
+  4 bytes MXT5
+  4 bytes width
+  4 bytes height
+  4 bytes Some identifier - mipmaps?
+  X bytes Rest of file is gzipped image
+
+  Unzipped image:
+  Has mipmaps - there's extra texture data after the main texture
+  DXT5 texture but is swizzled and stored in YCoCg colour space
+  If just put into a DDS container then blue channel appears missing - need to convert the colour space
+}
+
   //First get the width and height and data size
   SourceStream.Position := 4;
   Sourcestream.Read(Width, 4);
@@ -384,8 +592,7 @@ begin
 
   Sourcestream.Seek(4, soFromCurrent); //Unknown - mipmaps maybe?
 
-  //Check here if gzipped
-  //DOTT has gzipped dxt files after the 16 byte header
+  //Check here if gzipped DOTT always? has gzipped dxt files after the 16 byte header
   SourceStream.Read(Temp, 2);
   SourceStream.Seek(-2, soFromCurrent);
   if Temp = 35615 {1F8B} then
@@ -404,14 +611,26 @@ begin
     end;
   end;
 
-  Datasize := Width * Height; //Sourcestream.Size - 16; //The header on the dxt files is only 16 bytes long and is not a DDPIXELFORMAT structure
+  Datasize := Width * Height;  //The header on the dxt files is only 16 bytes long and is not a DDPIXELFORMAT structure
   Dataoffset := 16;
 
   AddDDSHeaderToStream(Width, Height, Datasize, DXT5, DestStream, false);
   SourceStream.Position := Dataoffset;
   DestStream.CopyFrom(SourceStream, DataSize);
-  Result := true;
 
+  DestStream.Position := 0;
+  InitImage(Img);
+  try
+    LoadImageFromStream(DestStream, Img);
+    ConvertImage(Img, ifA8R8G8B8); //Convert from DXT block format to normal ARGB 8bpp
+    GetImageFormatInfo( img.Format, Info );
+    ConvertYCoCgToRGB(Img.Bits, Width * Height, Info.BytesPerPixel); //Convert each pixel colour
+    DestStream.Size := 0;
+    SaveImageToStream('DDS', DestStream, Img);
+    Result := true;
+  finally
+   FreeImage(Img);
+  end;
 end;
 
 function TDFExplorerBase.WriteHeaderlessTexDDSToStream(SourceStream,
@@ -650,17 +869,12 @@ begin
     Header.SurfaceFormat.ddpfPixelFormat.dwGBitMask := $0000FF00;
     Header.SurfaceFormat.ddpfPixelFormat.dwBBitMask := $000000FF;
     Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;
-    Header.SurfaceFormat.dwPitchOrLinearSize := Height * Cardinal( (Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount div 8) * Width )
+    Header.SurfaceFormat.dwPitchOrLinearSize := Cardinal(Height) * (Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount div 8) * Cardinal(Width);
   end
   else
   begin
     Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC;
     Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
-    {Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_RGB or DDPF_ALPHAPIXELS;
-    Header.SurfaceFormat.ddpfPixelFormat.dwRBitMask := $00FF0000;
-    Header.SurfaceFormat.ddpfPixelFormat.dwGBitMask := $0000FF00;
-    Header.SurfaceFormat.ddpfPixelFormat.dwBBitMask := $000000FF;
-    Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;}
   end;
 
 

@@ -529,7 +529,7 @@ begin
 
   if NodeIsSelected then
   begin
-    menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage);
+    menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTFontImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage);
     menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage);
     menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or(fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
     menuItemDumpAudio.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Audio) or (fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio);
@@ -563,9 +563,9 @@ begin
 
   for i:=0 to tree.RootNodeCount -1 do
   begin
-    if fExplorer.FileType[i]  = ft_GenericImage then
+    if (fExplorer.FileType[i]  = ft_GenericImage) or (fExplorer.FileType[i] = ft_DOTTFontImage) or (fExplorer.FileType[i] = ft_DOTTXMLCostumeWithImage) then
       menuItemSaveAllImages.Visible:=true;
-    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage)then
+    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage) then
     begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
@@ -670,6 +670,21 @@ begin
     fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS_DOTT);
   end;
 
+  //DOTT Font images
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_DOTTFontImage then
+  begin
+    panelPreviewImage.BringToFront;
+    fExplorer.DrawImageDOTTFont(Tree.focusednode.Index, imagePreview.Bitmap);
+  end;
+
+  //DOTT XML Costume images
+  if fExplorer.FileType[Tree.FocusedNode.Index] = ft_DOTTXMLCostumeWithImage then
+  begin
+    panelPreviewImage.BringToFront;
+    fExplorer.DrawImageDOTTCostume(Tree.focusednode.Index, imagePreview.Bitmap);
+  end;
+
+
   //Audio types
   if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) or
      (fExplorer.FileType[Tree.FocusedNode.Index] = ft_IMCAudio) then
@@ -758,6 +773,8 @@ begin
     ft_HeaderlessDDSImage:  ImageIndex:= 8;
     ft_HeaderlessPsychoDDSImage:  ImageIndex:= 8;
     ft_HeaderlessDOTTDDSImage:  ImageIndex:= 8;
+    ft_DOTTXMLCostumeWithImage: ImageIndex:=8;
+    ft_DOTTFontImage:       ImageIndex:= 8;
     ft_Text:                ImageIndex:= 9;
     ft_DelimitedText:       ImageIndex:= 14;
     ft_CSVText:             ImageIndex:= 14;
@@ -853,6 +870,8 @@ begin
         ft_HeaderlessDDSImage:  MyPopupItems[i].ImageIndex:=8;
         ft_HeaderlessPsychoDDSImage: MyPopupItems[i].ImageIndex:=8;
         ft_HeaderlessDOTTDDSImage: MyPopupItems[i].ImageIndex:=8;
+        ft_DOTTXMLCostumeWithImage: MyPopupItems[i].ImageIndex:=8;
+        ft_DOTTFontImage:       MyPopupItems[i].ImageIndex:=8;
         ft_Text:                MyPopupItems[i].ImageIndex:=9;
         ft_CSVText:             MyPopupItems[i].ImageIndex:=14;
         ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
@@ -1086,6 +1105,16 @@ begin
       if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage then
       begin
         DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS_DOTT)
+      end
+      else
+      if fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTFontImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDOTTFont(Tree.focusednode.Index, TempBmp32)
+      end
+      else
+      if fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDOTTCostume(Tree.focusednode.Index, TempBmp32)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage then
@@ -1326,8 +1355,8 @@ begin
       if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
         if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
           if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDOTTDDSImage) then
-            if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then //not DDS image
-              begin
+            if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
+              begin //not DDS image
                 TempNode:=Tree.GetNext(TempNode);
                 continue;
               end;
@@ -1394,11 +1423,13 @@ begin
         if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
           if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
             if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDOTTDDSImage) then
-              if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
-              begin
-                TempNode:=Tree.GetNext(TempNode);
-                continue;
-              end;
+              if (fExplorer.FileType[TempNode.Index] <> ft_DOTTFontImage) then
+                if (fExplorer.FileType[TempNode.Index] <> ft_DOTTXMLCostumeWithImage) then
+                  if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
+                  begin
+                    TempNode:=Tree.GetNext(TempNode);
+                    continue;
+                  end;
 
       TempBmp32.Clear;
       TempBmp.Assign(nil);
@@ -1422,6 +1453,16 @@ begin
       if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDOTTDDSImage then
       begin
         DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS_DOTT)
+      end
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_DOTTFontImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDOTTFont(TempNode.Index, TempBmp32);
+      end
+      else
+      if fExplorer.FileType[TempNode.Index] = ft_DOTTXMLCostumeWithImage then
+      begin
+        DecodeResult:=fExplorer.DrawImageDOTTCostume(TempNode.Index, TempBmp32);
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_GenericImage then

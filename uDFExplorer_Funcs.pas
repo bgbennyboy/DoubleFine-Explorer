@@ -16,7 +16,8 @@ unit uDFExplorer_Funcs;
 interface
 
 uses
-  Sysutils, Windows, JCLRegistry, uDFExplorer_Types, Classes, StrUtils, JCLStrings;
+  Sysutils, Windows, JCLRegistry, uDFExplorer_Types, uMemReader, Classes, StrUtils,
+  JCLStrings, ImagingTypes, ImagingUtility;
 
   function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
   function GetCavePath: string;
@@ -33,9 +34,13 @@ uses
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
+  function SwapEndianWord(const Value: Word): Word; inline;
   function FindParamIndex(Param: string): integer;
+  function FindFileHeader(SearchStream: TExplorerMemoryStream; StartSearchAt, EndSearchAt: Integer; Header: string): integer;
   procedure RemoveReadOnlyFileAttribute(FileName: string);
   procedure GetSteamLibraryPaths(LibraryPaths: TStringList);
+  procedure ConvertYCoCgToRGB(Pixels: PByte; NumPixels, BytesPerPixel: Integer);
+
 
 implementation
 
@@ -533,9 +538,9 @@ begin
   else
   if FileExt = 'dxt' then result:= ft_HeaderlessDOTTDDSImage
   else
-  if FileExt = 'ftx' then result:= ft_DDSImage
+  if FileExt = 'ftx' then result:= ft_DOTTFontImage
   else
-  if FileExt = 'xml' then result:= ft_Other
+  if FileExt = 'xml' then result:= ft_DOTTXMLCostumeWithImage
   else
   if FileExt = 'sou' then result:= ft_Other
   else
@@ -888,6 +893,11 @@ asm
   bswap eax
 end;
 
+function SwapEndianWord(const Value: Word): Word; inline;
+begin
+  Result:= Value xor $8000;
+end;
+
 function FindParamIndex(Param: string): integer;
 var  //Remember to include / in param when calling this, since ParamStr returns the /
   i: integer;
@@ -917,4 +927,76 @@ begin
     FileSetAttr(FileName, Attributes xor faReadOnly);
 end;
 
+procedure YCoCgToRGBWithAlpha(Y, Co, Cg, InAlpha: Byte; var R, G, B, OutAlpha: Byte);
+var
+  CoInt, CgInt: Integer;
+begin
+  CoInt := Co - 128;
+  CgInt := Cg - 128;
+  R := ClampToByte(Y + CoInt - CgInt);
+  G := ClampToByte(Y + CgInt);
+  B := ClampToByte(Y - CoInt - CgInt);
+  OutAlpha := InAlpha;
+end;
+
+
+procedure ConvertYCoCgToRGB(Pixels: PByte; NumPixels, BytesPerPixel: Integer);
+var
+  I: Integer;
+  PixPtr: PByte;
+  Y, CO, CG, Al: Byte;
+begin
+  //https://www.nvidia.com/object/real-time-ycocg-dxt-compression.html
+  //When converted rgba gets laid out as co,cg,a,y
+  PixPtr := Pixels;
+  for I := 0 to NumPixels - 1 do
+  begin
+    with PColor32Rec(PixPtr)^ do
+    begin
+      CO := R;
+      CG := G;
+      Al := B;
+      Y  := A;
+      YCoCgToRGBWithAlpha(Y, CO, CG, Al, R, G, B, A);
+    end;
+    Inc(PixPtr, BytesPerPixel);
+  end;
+end;
+
+
+function FindFileHeader(SearchStream: TExplorerMemoryStream;
+  StartSearchAt, EndSearchAt: Integer; Header: string): integer;
+var
+  HeaderLength, Index: integer;
+begin
+  Result:=-1;
+  Index:=1;
+  if EndSearchAt > SearchStream.Size then
+    EndSearchAt:=SearchStream.Size;
+
+  HeaderLength:=Length(Header);
+  if HeaderLength <= 0 then exit;
+
+
+  SearchStream.Position:=StartSearchAt;
+  while SearchStream.Position < EndSearchAt do
+  begin
+    if Chr(SearchStream.ReadByte) <> Header[Index] then
+    begin
+      if Index > 1 then
+        SearchStream.Position := SearchStream.Position  -1;
+
+      Index:=1;
+      continue;
+    end;
+
+    inc(Index);
+    if index > HeaderLength then
+    begin
+      Result:=SearchStream.Position - HeaderLength;
+      exit;
+    end;
+  end;
+
+end;
 end.

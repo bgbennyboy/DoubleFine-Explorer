@@ -30,6 +30,8 @@ type
     ft_HeaderlessDDSImage,
     ft_HeaderlessPsychoDDSImage,
     ft_HeaderlessDOTTDDSImage,
+    ft_DOTTFontImage,
+    ft_DOTTXMLCostumeWithImage,
     ft_Text,
     ft_CSVText,
     ft_DelimitedText,
