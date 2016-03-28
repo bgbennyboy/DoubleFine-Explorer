@@ -311,7 +311,7 @@ begin
     TempStream.Position:=0;
 
     //Not all DOTT XML costumes have an image inside them but many do
-    HeaderIndex := FindFileHeader(TempStream, 0, 3000, 'MXT5');
+    HeaderIndex := FindFileHeader(TempStream, 0, TempStream.Size, 'MXT5');
     if HeaderIndex = -1 then
     begin
       Log('XML doesnt contain costume image (not all of them do) ' + fBundle.FileName[FileIndex]);
