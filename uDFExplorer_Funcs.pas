@@ -19,7 +19,8 @@ uses
   Sysutils, Windows, JCLRegistry, uDFExplorer_Types, uMemReader, Classes, StrUtils,
   JCLStrings, ImagingTypes, ImagingUtility;
 
-  function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
+  function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''):
+    TFileType;
   function GetCavePath: string;
   function GetStackingPath: string;
   function GetIronBrigadePath: string;
@@ -36,7 +37,8 @@ uses
   function SwapEndianDWord(Value: integer): integer; register;
   function SwapEndianWord(const Value: Word): Word; inline;
   function FindParamIndex(Param: string): integer;
-  function FindFileHeader(SearchStream: TExplorerMemoryStream; StartSearchAt, EndSearchAt: Integer; Header: string): integer;
+  function FindFileHeader(SearchStream: TExplorerMemoryStream; StartSearchAt,
+    EndSearchAt: Integer; Header: string): integer;
   procedure RemoveReadOnlyFileAttribute(FileName: string);
   procedure GetSteamLibraryPaths(LibraryPaths: TStringList);
   procedure ConvertYCoCgToRGB(Pixels: PByte; NumPixels, BytesPerPixel: Integer);
@@ -51,7 +53,8 @@ var
   i: integer;
 begin
   try
-    SteamPath := IncludeTrailingPathDelimiter(RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
+    SteamPath := IncludeTrailingPathDelimiter(
+      RegReadString(HKEY_CURRENT_USER, 'SOFTWARE\Valve\Steam', 'SteamPath'));
     SteamPath := StringReplace(SteamPath, '/', '\', [rfReplaceAll, rfIgnoreCase]);
   except on EJCLRegistryError do
     exit;
@@ -93,7 +96,8 @@ begin
 
 end;
 
-function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
+function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''):
+  TFileType;
 begin
   {The Cave types}
   if FileExt = 'AchievementIdMap' then result:= ft_DelimitedText //
@@ -794,7 +798,8 @@ begin
 
 
   if DirectoryExists(result) = false then
-    if DirectoryExists('C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win\') then //Retail path? untested by me
+    if DirectoryExists(
+      'C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win\') then //Retail path? untested by me
       result := 'C:\Program Files (x86)\Microsoft Games Studios\Iron Brigade\Win';
 end;
 

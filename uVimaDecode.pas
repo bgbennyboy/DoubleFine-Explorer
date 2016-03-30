@@ -18,9 +18,11 @@ uses
   classes, sysutils, uMemReader, uWaveWriter;
 
 type
-  TCodec =  (codecNULL, codecVIMA, codec0x0000, codec0x0001, codec0x0002, codec0x0003, codec0x000A, codec0x000B, codec0x000C, codec0x000D, codec0x000F, codecUnknown);
+  TCodec =  (codecNULL, codecVIMA, codec0x0000, codec0x0001, codec0x0002, codec0x0003,
+    codec0x000A, codec0x000B, codec0x000C, codec0x000D, codec0x000F, codecUnknown);
 
-function DecompressIMCToStream(SourceStream: TExplorerMemoryStream; DestStream: TStream): boolean;
+function DecompressIMCToStream(SourceStream: TExplorerMemoryStream; DestStream: TStream):
+  boolean;
 
 implementation
 
@@ -107,7 +109,8 @@ const
   @IMCOtherTable6
   );
 
-function DecompressIMCToStream(SourceStream: TExplorerMemoryStream; DestStream: TStream): boolean;
+function DecompressIMCToStream(SourceStream: TExplorerMemoryStream; DestStream: TStream):
+  boolean;
 type
   PCompInfo = ^TCompInfo;
   TCompInfo = record

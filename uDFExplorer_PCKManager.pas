@@ -273,7 +273,8 @@ begin
     UnCompressedSize := fBundle.ReadDWord;
 
     if CompressedSize <> UncompressedSize then
-      Log('Compressed and uncompressed size differ - check compression. File no ' + inttostr(i) + ' at offset ' + inttostr(fBundle.Position - 22));
+      Log('Compressed and uncompressed size differ - check compression. File no ' +
+        inttostr(i) + ' at offset ' + inttostr(fBundle.Position - 22));
 
     FilenameLength := fBundle.ReadDWord;
     fBundle.Seek(10, soFromCurrent); //Unknown
@@ -359,7 +360,8 @@ begin
     exit;
   end;
 
-  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
+  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName,
+    fmOpenWrite or fmCreate);
   try
     SaveFileToStream(FileNo,SaveFile);
   finally
@@ -375,8 +377,11 @@ var
 begin
   for I := 0 to BundleFiles.Count - 1 do
   begin
-    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) + ExtractPartialPath( TDFFile(BundleFiles.Items[i]).FileName)));
-    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +  TDFFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
+    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) +
+      ExtractPartialPath( TDFFile(BundleFiles.Items[i]).FileName)));
+
+    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +
+      TDFFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
     try
       SaveFileToStream(i, SaveFile);
     finally
@@ -428,7 +433,8 @@ begin
       TempStream.CopyFrom(fBundle, TDFFile(BundleFiles.Items[FileNo]).Size);
       //tempstream.SaveToFile('c:\users\ben\desktop\testfile');
       Tempstream.Position := 0;
-      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize, DestStream);
+      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize,
+        DestStream);
     finally
       TempStream.Free;
     end

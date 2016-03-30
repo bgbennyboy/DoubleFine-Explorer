@@ -22,8 +22,8 @@ uses
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
-  uDFExplorer_PKGManager, uDFExplorer_PPAKManager, uDFExplorer_LABManager, uDFExplorer_LPAKManager,
-  uVimaDecode;
+  uDFExplorer_PKGManager, uDFExplorer_PPAKManager, uDFExplorer_LABManager,
+  uDFExplorer_LPAKManager, uVimaDecode;
 
 type
   TDFExplorerBase = class
@@ -43,17 +43,21 @@ private
   function WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteDOTTFontToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessTexDDSToStream(SourceStream, DestStream: TStream): boolean;
-  function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream, DestStream: TStream): boolean;
+  function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream,
+    DestStream: TStream): boolean;
   function WriteHeaderlessDOTT_DDSToStream(SourceStream, DestStream: TStream): boolean;
-  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE; DestStream: TStream; IsCubemap: boolean = false);
+  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE;
+    DestStream: TStream; IsCubemap: boolean = false);
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
   destructor Destroy; override;
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDOTTFont(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDOTTCostume(FileIndex: integer; DestBitmap: TBitmap32): boolean;
-  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
-  function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType: TDDSType = DDS_NORMAL): boolean;
+  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType:
+    TDDSType = DDS_NORMAL): boolean;
+  function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType:
+    TDDSType = DDS_NORMAL): boolean;
   function SaveIMCToStream(FileNo: integer; DestStream: TStream): boolean;
   procedure Initialise;
   procedure SaveFile(FileNo: integer; DestDir, FileName: string; DoLog: boolean = true);
@@ -314,7 +318,8 @@ begin
     HeaderIndex := FindFileHeader(TempStream, 0, TempStream.Size, 'MXT5');
     if HeaderIndex = -1 then
     begin
-      Log('XML doesnt contain costume image (not all of them do) ' + fBundle.FileName[FileIndex]);
+      Log('XML doesnt contain costume image (not all of them do) ' +
+        fBundle.FileName[FileIndex]);
       DestBitmap.SetSize(0,0);
       Exit;
     end;
@@ -322,7 +327,8 @@ begin
 
     TempStreamJustMXT5 := TExplorerMemoryStream.Create;
     try
-      //Copy it out to a new stream which we can pass to the decoder - it expects a stream thats just a MXT5 texture with no additional header
+      //Copy it out to a new stream which we can pass to the decoder -
+      //it expects a stream thats just a MXT5 texture with no additional header
       TempStream.Position := HeaderIndex;
       TempStreamJustMXT5.CopyFrom(TempStream, TempStream.Size - TempStream.Position);
       TempStream.Clear;
@@ -415,7 +421,7 @@ begin
   4 bytes unknown
   x bytes Gzipped texture
 
-  Texture isnt DXT -
+  Texture isn't DXT -
     For FXT1 its 8bpp greyscale or RGB233 (unsure which probably greyscale as its fonts)
     For FXT2 its 16bpp
 }
@@ -504,7 +510,8 @@ begin
       case DDSType of
         DDS_NORMAL: WriteDDSToStream(Tempstream, DDSStream);
         DDS_HEADERLESS: WriteHeaderlessTexDDSToStream(Tempstream, DDSStream);
-        DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
+        DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(
+          TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
         DDS_HEADERLESS_DOTT: WriteHeaderlessDOTT_DDSToStream(TempStream, DDSStream);
       end;
 
@@ -579,7 +586,8 @@ begin
   Unzipped image:
   Has mipmaps - there's extra texture data after the main texture
   DXT5 texture but is swizzled and stored in YCoCg colour space
-  If just put into a DDS container then blue channel appears missing - need to convert the colour space
+  If just put into a DDS container then blue channel appears missing -
+  need to convert the colour space
 }
 
   //First get the width and height and data size
@@ -611,7 +619,7 @@ begin
     end;
   end;
 
-  Datasize := Width * Height;  //The header on the dxt files is only 16 bytes long and is not a DDPIXELFORMAT structure
+  Datasize := Width * Height;  //The header on the dxt files is only 16 bytes long
   Dataoffset := 16;
 
   AddDDSHeaderToStream(Width, Height, Datasize, DXT5, DestStream, false);
@@ -636,7 +644,8 @@ end;
 function TDFExplorerBase.WriteHeaderlessTexDDSToStream(SourceStream,
   DestStream: TStream): boolean;
 var
-  TempInt,  FirstCompChunkSize, FirstChunkDecompressedSize, SecondChunkCompSize, SecondChunkDecompressedSize: integer;
+  TempInt,  FirstCompChunkSize, FirstChunkDecompressedSize, SecondChunkCompSize,
+  SecondChunkDecompressedSize: integer;
   Width, Height: word;
   TempStream: TMemoryStream;
   DXTType: TDXTType;
@@ -657,7 +666,9 @@ begin
   File has a 32 byte header then (usually) 2 zlib compressed images.
   1st image is a smaller version of the second image (mipmap?) - its half the size anyway.
 
-  There isn't always a second image. If this is the case then the first image is used but the width and height need halving since the width and height in the header apply to the second image.
+  There isn't always a second image. If this is the case then the first image is used but
+  the width and height need halving since the width and height in the header apply to the
+  second image.
   Sometimes the second image has a mipmap as part of the data.
   A few files arent compressed. They have no first image and an uncompressed second image.
 }
@@ -695,9 +706,11 @@ begin
 
   TempStream := TMemoryStream.Create;
   try
-    //Have to decompress the stream first - we need to know the size of the data to be able to write the DDS header
+    //Have to decompress the stream first - we need to know the size of the data to be
+    //able to write the DDS header
     try
-      if (SecondChunkCompSize > 0) and (SecondChunkCompSize = SecondChunkDecompressedSize) then //Not compressed
+      if (SecondChunkCompSize > 0) and (SecondChunkCompSize = SecondChunkDecompressedSize)
+      then //Not compressed
         TempStream.CopyFrom(SourceStream, SourceStream.Size - SourceStream.Position)
       else
         ZDecompressStream2(SourceStream, TempStream, -15);
@@ -714,7 +727,8 @@ begin
 
 
 
-    //Correct for images with mipmaps - remove them - they sometimes crash the internal dds reader
+    //Correct for images with mipmaps - remove them - they sometimes crash the
+    //internal dds reader
     if TempStream.Size > (Width * Height) then //DXT5 with mipmap
     begin
       Tempstream.Size := (Width * Height);
@@ -768,19 +782,21 @@ begin
   SourceStream.Position := PsychoDDS.DataOffset;
 
   //Just main texture - ignore any mipmaps
-  TextureSize := PsychoDDS.MainTextureSize; //SourceStream.Size - SourceStream.Position;// - PsychoDDS.MipmapSize;
+  TextureSize := PsychoDDS.MainTextureSize;
 
   //Parsing textureid 0 is not always correct and very hacky
   if (SourceStream.Size - SourceStream.Position) < TextureSize then
     TextureSize := SourceStream.Size - SourceStream.Position;
 
-  AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, DXTType, DestStream, PsychoDDS.IsCubemap);
+  AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, DXTType,
+    DestStream, PsychoDDS.IsCubemap);
+
   DestStream.CopyFrom(SourceStream, TextureSize);
   Result := true;
 end;
 
-procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE;
-  DestStream: TStream; IsCubemap: boolean = false);
+procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer;
+  DXTType: TDXTTYPE; DestStream: TStream; IsCubemap: boolean = false);
 const
   DDSD_CAPS =                       $00000001;
   DDSD_HEIGHT =                     $00000002;
@@ -853,7 +869,8 @@ begin
   FillChar(header, SizeOf(TDDSHeader), 0);
   Header.magic := DDSMAGIC;
   Header.SurfaceFormat.dwSize := 124;
-  Header.SurfaceFormat.dwFlags := DDSD_CAPS or DDSD_HEIGHT or DDSD_WIDTH or DDSD_PIXELFORMAT or DDSD_LINEARSIZE;
+  Header.SurfaceFormat.dwFlags := DDSD_CAPS or DDSD_HEIGHT or DDSD_WIDTH or
+                                  DDSD_PIXELFORMAT or DDSD_LINEARSIZE;
   Header.SurfaceFormat.dwHeight := Height;
   Header.SurfaceFormat.dwWidth := Width;
   //Header.SurfaceFormat.dwMipMapCount := 0;
@@ -869,7 +886,8 @@ begin
     Header.SurfaceFormat.ddpfPixelFormat.dwGBitMask := $0000FF00;
     Header.SurfaceFormat.ddpfPixelFormat.dwBBitMask := $000000FF;
     Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;
-    Header.SurfaceFormat.dwPitchOrLinearSize := Cardinal(Height) * (Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount div 8) * Cardinal(Width);
+    Header.SurfaceFormat.dwPitchOrLinearSize := Cardinal(Height) *
+      (Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount div 8) * Cardinal(Width);
   end
   else
   begin
@@ -892,7 +910,8 @@ begin
   Header.SurfaceFormat.ddsCaps.dwCaps1 := DDSCAPS_TEXTURE {or DDSCAPS_COMPLEX};
   if IsCubeMap=true then
   begin
-    Header.SurfaceFormat.ddsCaps.dwCaps1 := Header.SurfaceFormat.ddsCaps.dwCaps1 or DDSCAPS_COMPLEX;
+    Header.SurfaceFormat.ddsCaps.dwCaps1 := Header.SurfaceFormat.ddsCaps.dwCaps1 or
+                                             DDSCAPS_COMPLEX;
     Header.SurfaceFormat.ddsCaps.dwCaps2 :=  DDSCAPS2_CUBEMAP or
                                              DDSCAPS2_CUBEMAP_POSITIVEX or
                                              DDSCAPS2_CUBEMAP_NEGATIVEX or
@@ -992,13 +1011,19 @@ begin
     fBundle.SaveFileToStream(FileIndex, TempStream);
     TempStream.Position:=0;
 
-    SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
+    SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir) + FileName,
+      fmOpenWrite or fmCreate);
     try
       case DDSType of
-        DDS_NORMAL: Result := WriteDDSToStream(Tempstream, SaveFile);
-        DDS_HEADERLESS: Result := WriteHeaderlessTexDDSToStream(Tempstream, SaveFile);
-        DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, SaveFile);
-        DDS_HEADERLESS_DOTT: Result := WriteHeaderlessDOTT_DDSToStream(Tempstream, SaveFile);
+        DDS_NORMAL:
+          Result := WriteDDSToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS:
+          Result := WriteHeaderlessTexDDSToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS_PSYCHONAUTS:
+          Result := WriteHeaderlessPsychonautsDDSToStream(
+            TPPAKManager(fBundle ).PsychoDDS[FileIndex], Tempstream, SaveFile);
+        DDS_HEADERLESS_DOTT:
+          Result := WriteHeaderlessDOTT_DDSToStream(Tempstream, SaveFile);
       end;
     finally
       SaveFile.Free;
@@ -1008,7 +1033,8 @@ begin
   end;
 end;
 
-procedure TDFExplorerBase.SaveFile(FileNo: integer; DestDir, FileName: string; DoLog: boolean = true);
+procedure TDFExplorerBase.SaveFile(FileNo: integer; DestDir, FileName: string;
+  DoLog: boolean = true);
 begin
   if DoLog then
     Log(strSavingFile + FileName);

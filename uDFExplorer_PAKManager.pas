@@ -311,12 +311,16 @@ begin
     for I := 0 to BundleFiles.Count -1 do
     begin
        //Add file extension
-       TDFFile(BundleFiles[i]).FileExtension := Trim(FileExtensions[TDFFile(BundleFiles[i]).FileTypeIndex]);
+       TDFFile(BundleFiles[i]).FileExtension :=
+        Trim(FileExtensions[TDFFile(BundleFiles[i]).FileTypeIndex]);
 
        //Add file type
-       TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension( TDFFile(BundleFiles[i]).FileExtension, Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
-       if TDFFile(BundleFiles[i]).FileType = ft_Unknown then Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
+       TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension(
+        TDFFile(BundleFiles[i]).FileExtension,
+        Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
 
+       if TDFFile(BundleFiles[i]).FileType = ft_Unknown then
+        Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
     end;
 
   finally
@@ -459,12 +463,16 @@ Think this is the structure
     for I := 0 to BundleFiles.Count -1 do
     begin
        //Add file extension
-       TDFFile(BundleFiles[i]).FileExtension := Trim(FileExtensions[TDFFile(BundleFiles[i]).FileTypeIndex]);
+       TDFFile(BundleFiles[i]).FileExtension :=
+        Trim(FileExtensions[TDFFile(BundleFiles[i]).FileTypeIndex]);
 
        //Add file type
-       TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension( TDFFile(BundleFiles[i]).FileExtension, Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
-       if TDFFile(BundleFiles[i]).FileType = ft_Unknown then Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
+       TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension(
+        TDFFile(BundleFiles[i]).FileExtension,
+        Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
 
+       if TDFFile(BundleFiles[i]).FileType = ft_Unknown then
+        Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
 
        //Now add file extensions to the files
        //TCaveFile(BundleFiles[i]).FileName := TCaveFile(BundleFiles[i]).FileName + '.' + TCaveFile(BundleFiles[i]).FileExtension;
@@ -495,7 +503,8 @@ begin
   end;
 
 
-  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
+  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir) +
+    FileName, fmOpenWrite or fmCreate);
   try
     SaveFileToStream(FileNo,SaveFile);
   finally
@@ -511,8 +520,11 @@ var
 begin
   for I := 0 to BundleFiles.Count - 1 do
   begin
-    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) + ExtractPartialPath( TDFFile(BundleFiles.Items[i]).FileName)));
-    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +  TDFFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
+    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) +
+      ExtractPartialPath( TDFFile(BundleFiles.Items[i]).FileName)));
+
+    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +
+      TDFFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
     try
       SaveFileToStream(i, SaveFile);
     finally
@@ -553,7 +565,8 @@ begin
       TempStream.CopyFrom(fDataBundle, TDFFile(BundleFiles.Items[FileNo]).Size);
       //tempstream.SaveToFile('c:\users\ben\desktop\testfile');
       Tempstream.Position := 0;
-      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize, DestStream);
+      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize,
+        DestStream);
     finally
       TempStream.Free;
     end

@@ -183,10 +183,10 @@ end;
 
 procedure TLPAKManager.ParseFiles;
 var
-  startOfFileEntries, startOfFileNames, startOfData,
-  sizeOfIndex, sizeOfFileEntries, sizeOfFileNames, sizeOfData: integer;
-
-  numFiles, i, nameOffs, currNameOffset: integer;
+  startOfFileEntries, startOfFileNames, sizeOfIndex, sizeOfFileEntries, sizeOfFileNames,
+  sizeOfData: integer;
+  startOfData: cardinal;
+  numFiles, i, {nameOffs,} currNameOffset: integer;
   FileExt, FileName: string;
   FileObject: TDFFile;
   FileType: TFileType;
@@ -239,17 +239,20 @@ begin
     fBundle.Position  := startOfFileEntries + (sizeOfFileRecord * i);
     FileObject        := TDFFile.Create;
     FileObject.Offset := fBundle.ReadDWord + startOfData;
-    nameOffs          := fBundle.ReadDWord;
+    //nameOffs          := fBundle.ReadDWord;
+    fBundle.Seek(4, soFromCurrent); //Past nameOffs
     FileObject.Size   := fBundle.ReadDWord;
     fBundle.Seek(4, soFromCurrent); // Compressed size?
     if fBundle.ReadDWord <> 0 then
     begin
-      Log('Compressed file found in file ' +  inttostr(i) + ' at offset ' + inttostr(FileObject.Offset) + ' hurry up and add support for this!');
+      Log('Compressed file found in file ' +  inttostr(i) + ' at offset ' +
+        inttostr(FileObject.Offset) + ' hurry up and add support for this!');
       FileObject.Compressed := true;
     end;
 
     //Get filename from filenames table
-    //In MI2SE - nameOffs is broken - so just ignore it - luckily filenames are stored in the same order as the entries in the file records
+    //In MI2SE - nameOffs is broken - so just ignore it - luckily filenames are stored
+    //in the same order as the entries in the file records
     fBundle.Position    := startOfFileNames + currNameOffset;
     FileName := PChar(fBundle.ReadString(255));
     inc(currNameOffset, length(FileName) + 1); //+1 because each filename is null terminated
@@ -294,7 +297,8 @@ begin
     exit;
   end;
 
-  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
+  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName,
+    fmOpenWrite or fmCreate);
   try
     SaveFileToStream(FileNo,SaveFile);
   finally
@@ -310,8 +314,10 @@ var
 begin
   for I := 0 to BundleFiles.Count - 1 do
   begin
-    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) + ExtractPartialPath( TDFFile(BundleFiles.Items[i]).FileName)));
-    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +  TDFFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
+    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) +
+      ExtractPartialPath( TDFFile(BundleFiles.Items[i]).FileName)));
+    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +
+      TDFFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
     try
       SaveFileToStream(i, SaveFile);
     finally
@@ -342,7 +348,7 @@ begin
 
   Ext:=Uppercase(ExtractFileExt(TDFFile(BundleFiles.Items[FileNo]).FileName));
 
-  fBundle.Seek(TDFFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
+  fBundle.Position := TDFFile(BundleFiles.Items[FileNo]).Offset;
 
   //TEMPORARY HACK FOR DECOMPRESSING TEX TEXTURES*************************************************************************
   {if TDFFile(BundleFiles.Items[FileNo]).FileExtension = 'tex' then
@@ -363,7 +369,8 @@ begin
       TempStream.CopyFrom(fBundle, TDFFile(BundleFiles.Items[FileNo]).Size);
       //tempstream.SaveToFile('c:\users\ben\desktop\testfile');
       Tempstream.Position := 0;
-      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize, DestStream);
+      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize,
+        DestStream);
     finally
       TempStream.Free;
     end

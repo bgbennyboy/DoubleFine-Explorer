@@ -12,8 +12,12 @@
 }
 {
 TODO
-	Iron Brigade + UI.fsb in The Cave - still some sounds not working - different codec? Looks like FSB says mp3/wav but actually another codec
-	Filter by actual file extension no rather than type? Eg where type is blob but there's different extensions within that like lua, csv etc
+	Iron Brigade + UI.fsb in The Cave - still some sounds not working - different codec?
+  Looks like FSB says mp3/wav but actually another codec
+
+	Filter by actual file extension no rather than type? Eg where type is blob but there's
+  different extensions within that like lua, csv etc
+
 	Use generic types for files rather than file extensions eg ImageFileTypes
 }
 
@@ -23,7 +27,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Menus, ImgList, Buttons, ExtCtrls, IniFiles,
+  Dialogs, StdCtrls, Menus, ImgList, Buttons, ExtCtrls, IniFiles, System.UITypes,
   JvBaseDlg, JvBrowseFolder, JvExStdCtrls, JvRichEdit, JvEdit, JvExControls,
   JvTracker, JvExExtCtrls, JvExtComponent, JvSplit, JvAnimatedImage, JvGIFCtrl,
 
@@ -108,7 +112,6 @@ type
     procedure OpenPopupMenuHandler(Sender: TObject);
     procedure TreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-
     procedure TreeChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure menuItemDumpFileClick(Sender: TObject);
     procedure btnSaveFileClick(Sender: TObject);
@@ -148,7 +151,7 @@ type
     function IsViewFilteredByCategory: boolean;
     function GetCommandLineFilePath: string;
     function CaptureConsoleOutput(const ACommand, AParameters: String): ansistring;
-    function DecompileLuaToString(FileNo: integer): string;
+    function DecompileLuaToString(FileNo: cardinal): string;
     function SaveFolderDialog(DialogTitle: string = 'Choose a folder'): string;
     procedure OnDoneLoading(Count: integer);
     procedure DoLog(Text: string);
@@ -242,7 +245,7 @@ begin
     editFind.Width := 450;
   end;
 
-  //Check command line switch - may need to open a passed file (hack for fsb files in broken age)
+  //Check command line switch - may need to open a passed file (hack for fsb files)
   FileToOpen := GetCommandLineFilePath;
   if FileToOpen <> '' then
   begin
@@ -342,8 +345,8 @@ begin
       if DeleteFile(fFilesToCleanup[i]) then fFilesToCleanup.Delete(i);
     end;
 
-     {if theres still files to be deleted - keep them on the list - FreeResources is called
-      every time a ttarch is opened so could free it later}
+    {if theres still files to be deleted - keep them on the list - FreeResources is called
+     every time a ttarch is opened so could free it later}
      if fFilesToCleanup.Count = 0 then
         FreeAndNil(fFilesToCleanup);
   end;
@@ -456,8 +459,8 @@ begin
 
   if EditFind.Text = '' then
   begin
-    // If view is filtered and someone clicks in the search box and out again without typing
-    // anything , we dont want the view to change to show all nodes
+    {If view is filtered and someone clicks in the search box and out again without typing
+     anything , we dont want the view to change to show all nodes}
     if IsViewFilteredByCategory = false then
       FilterNodesByFileExt('');
 
@@ -529,11 +532,29 @@ begin
 
   if NodeIsSelected then
   begin
-    menuItemDumpImage.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTFontImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage);
-    menuItemDumpDDSImage.Visible:=(fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage);
-    menuItemDumpText.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or(fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
-    menuItemDumpAudio.Visible:= (fExplorer.FileType[Tree.focusednode.Index] = ft_Audio) or (fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio);
-    menuItemDumpLua.Visible:=fExplorer.FileType[Tree.focusednode.Index] = ft_Lua;
+    menuItemDumpImage.Visible :=
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTFontImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage);
+    menuItemDumpDDSImage.Visible :=
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage);
+    menuItemDumpText.Visible :=
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_CSVText) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_Lua);
+    menuItemDumpAudio.Visible :=
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_Audio) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio);
+    menuItemDumpLua.Visible :=
+      fExplorer.FileType[Tree.focusednode.Index] = ft_Lua;
   end;
 end;
 
@@ -553,7 +574,6 @@ begin
 
   if Tree.RootNodeCount = 0 then exit;
 
-
   menuItemSaveAllImages.Visible:=false;
   menuItemSaveAllText.Visible:=false;
   menuItemSaveAllDDSImages.Visible:=false;
@@ -563,17 +583,35 @@ begin
 
   for i:=0 to tree.RootNodeCount -1 do
   begin
-    if (fExplorer.FileType[i]  = ft_GenericImage) or (fExplorer.FileType[i] = ft_DOTTFontImage) or (fExplorer.FileType[i] = ft_DOTTXMLCostumeWithImage) then
-      menuItemSaveAllImages.Visible:=true;
-    if (fExplorer.FileType[i]  = ft_DDSImage) or (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage) then
+    if (fExplorer.FileType[i] = ft_GenericImage) or
+       (fExplorer.FileType[i] = ft_DOTTFontImage) or
+       (fExplorer.FileType[i] = ft_DOTTXMLCostumeWithImage) then
+    begin
+        menuItemSaveAllImages.Visible:=true;
+    end;
+
+    if (fExplorer.FileType[i] = ft_DDSImage) or
+       (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or
+       (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or
+       (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage) then
     begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
     end;
-    if (fExplorer.FileType[i]  = ft_Text) or (fExplorer.FileType[i]  = ft_DelimitedText) or (fExplorer.FileType[i]  = ft_CSVText) then
+
+    if (fExplorer.FileType[i] = ft_Text) or
+       (fExplorer.FileType[i] = ft_DelimitedText) or
+       (fExplorer.FileType[i] = ft_CSVText) then
+    begin
       menuItemSaveAllText.Visible:=true;
-    if (fExplorer.FileType[i]  = ft_Audio) or (fExplorer.FileType[i]  = ft_IMCAudio) then
+    end;
+
+    if (fExplorer.FileType[i] = ft_Audio) or
+       (fExplorer.FileType[i] = ft_IMCAudio) then
+    begin
       menuItemSaveAllAudio.Visible:=true;
+    end;
+
     if fExplorer.FileType[i] = ft_Lua then
       menuItemSaveAllLua.Visible := true;
   end;
@@ -660,14 +698,16 @@ begin
   if fExplorer.FileType[Tree.FocusedNode.Index] = ft_HeaderlessPsychoDDSImage then
   begin
     panelPreviewImage.BringToFront;
-    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS_PSYCHONAUTS);
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap,
+      DDS_HEADERLESS_PSYCHONAUTS);
   end;
 
   //Headerless DOTT DDS images
   if fExplorer.FileType[Tree.FocusedNode.Index] = ft_HeaderlessDOTTDDSImage then
   begin
     panelPreviewImage.BringToFront;
-    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap, DDS_HEADERLESS_DOTT);
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap,
+      DDS_HEADERLESS_DOTT);
   end;
 
   //DOTT Font images
@@ -686,7 +726,8 @@ begin
 
 
   //Audio types
-  if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) or
+  if (fExplorer.FileType[Tree.FocusedNode.Index] = ft_Audio) or
+     (fExplorer.FileType[Tree.FocusedNode.Index] = ft_FSBFile) or
      (fExplorer.FileType[Tree.FocusedNode.Index] = ft_IMCAudio) then
   begin
     panelPreviewAudio.BringToFront;
@@ -705,7 +746,8 @@ begin
     finally
       EnableDisableButtonsGlobal(true);
       memoPreview.Lines.EndUpdate;
-      formMain.FocusControl(Tree); //Disabling the controls takes the focus from this - so when restored couldnt use keyboard
+      formMain.FocusControl(Tree); //Disabling the controls takes the focus from this -
+                                   //so when restored couldnt use keyboard
     end;
 
   end;
@@ -729,14 +771,47 @@ begin
     EnableDisableButtonsGlobal(false);
     try
       try
-        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), false);
-        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+        fExplorer.SaveFile(
+          Tree.focusednode.Index,
+          IncludeTrailingPathDelimiter(Getwindowstempfolder),
+          ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])),
+          false);
+
+        ShellExec(
+          0,
+          'open',
+          ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName),
+          strCmdLineOpenAndDelete + ' "' +
+          IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+          ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +
+          '"',
+          ExtractFilePath(Application.ExeName),
+          SW_SHOWNORMAL);
       except on E: EFCreateError do
       begin //get new name if its already there and open
-        NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
+        NewName := FindUnusedFileName(
+        IncludeTrailingPathDelimiter( GetWindowsTempFolder ) +
+        ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])),
+        ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]),
+        '-copy');
+
         DoLog(strErrHexFileExists + NewName);
-        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName), false);
-        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+
+        fExplorer.SaveFile(
+          Tree.focusednode.Index,
+          IncludeTrailingPathDelimiter(Getwindowstempfolder),
+          ExtractFileName(NewName),
+          false);
+
+        ShellExec(
+          0,
+          'open',
+          ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName),
+          strCmdLineOpenAndDelete + ' "' +
+          IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+          ExtractFileName(NewName) +'"',
+          ExtractFilePath(Application.ExeName),
+          SW_SHOWNORMAL);
       end;
       end;
 
@@ -768,22 +843,22 @@ begin
   FileType := fExplorer.FileType[node.Index];
 
   case FileType of
-    ft_GenericImage:        ImageIndex:= 8;
-    ft_DDSImage:            ImageIndex:= 8;
-    ft_HeaderlessDDSImage:  ImageIndex:= 8;
+    ft_GenericImage:              ImageIndex:= 8;
+    ft_DDSImage:                  ImageIndex:= 8;
+    ft_HeaderlessDDSImage:        ImageIndex:= 8;
     ft_HeaderlessPsychoDDSImage:  ImageIndex:= 8;
-    ft_HeaderlessDOTTDDSImage:  ImageIndex:= 8;
-    ft_DOTTXMLCostumeWithImage: ImageIndex:=8;
-    ft_DOTTFontImage:       ImageIndex:= 8;
-    ft_Text:                ImageIndex:= 9;
-    ft_DelimitedText:       ImageIndex:= 14;
-    ft_CSVText:             ImageIndex:= 14;
-    ft_Audio:               ImageIndex:= 12;
-    ft_FSBFile:             ImageIndex:= 12;
-    ft_IMCAudio:            ImageIndex:= 12;
-    ft_LUA:                 ImageIndex:= 15;
-    ft_Other:               ImageIndex:= 5;
-    ft_Unknown:             ImageIndex:= 5;
+    ft_HeaderlessDOTTDDSImage:    ImageIndex:= 8;
+    ft_DOTTXMLCostumeWithImage:   ImageIndex:=8;
+    ft_DOTTFontImage:             ImageIndex:= 8;
+    ft_Text:                      ImageIndex:= 9;
+    ft_DelimitedText:             ImageIndex:= 14;
+    ft_CSVText:                   ImageIndex:= 14;
+    ft_Audio:                     ImageIndex:= 12;
+    ft_FSBFile:                   ImageIndex:= 12;
+    ft_IMCAudio:                  ImageIndex:= 12;
+    ft_LUA:                       ImageIndex:= 15;
+    ft_Other:                     ImageIndex:= 5;
+    ft_Unknown:                   ImageIndex:= 5;
 
   else
     ImageIndex:=5;
@@ -865,22 +940,22 @@ begin
       tempFileType := GetFileTypeFromFileExtension( FileTypes[i] );
 
       case tempFileType of
-        ft_GenericImage:        MyPopupItems[i].ImageIndex:=8;
-        ft_DDSImage:            MyPopupItems[i].ImageIndex:=8;
-        ft_HeaderlessDDSImage:  MyPopupItems[i].ImageIndex:=8;
-        ft_HeaderlessPsychoDDSImage: MyPopupItems[i].ImageIndex:=8;
-        ft_HeaderlessDOTTDDSImage: MyPopupItems[i].ImageIndex:=8;
-        ft_DOTTXMLCostumeWithImage: MyPopupItems[i].ImageIndex:=8;
-        ft_DOTTFontImage:       MyPopupItems[i].ImageIndex:=8;
-        ft_Text:                MyPopupItems[i].ImageIndex:=9;
-        ft_CSVText:             MyPopupItems[i].ImageIndex:=14;
-        ft_DelimitedText:       MyPopupItems[i].ImageIndex:=14;
-        ft_Audio:               MyPopupItems[i].ImageIndex:=12;
-        ft_IMCAudio:            MyPopupItems[i].ImageIndex:=12;
-        ft_Other:               MyPopupItems[i].ImageIndex:=5;
-        ft_LUA:                 MyPopupItems[i].ImageIndex:=15;
-        ft_Unknown:             MyPopupItems[i].ImageIndex:=5;
-        ft_FSBFile:             MyPopupItems[i].ImageIndex:=12;
+        ft_GenericImage:              MyPopupItems[i].ImageIndex:=8;
+        ft_DDSImage:                  MyPopupItems[i].ImageIndex:=8;
+        ft_HeaderlessDDSImage:        MyPopupItems[i].ImageIndex:=8;
+        ft_HeaderlessPsychoDDSImage:  MyPopupItems[i].ImageIndex:=8;
+        ft_HeaderlessDOTTDDSImage:    MyPopupItems[i].ImageIndex:=8;
+        ft_DOTTXMLCostumeWithImage:   MyPopupItems[i].ImageIndex:=8;
+        ft_DOTTFontImage:             MyPopupItems[i].ImageIndex:=8;
+        ft_Text:                      MyPopupItems[i].ImageIndex:=9;
+        ft_CSVText:                   MyPopupItems[i].ImageIndex:=14;
+        ft_DelimitedText:             MyPopupItems[i].ImageIndex:=14;
+        ft_Audio:                     MyPopupItems[i].ImageIndex:=12;
+        ft_IMCAudio:                  MyPopupItems[i].ImageIndex:=12;
+        ft_Other:                     MyPopupItems[i].ImageIndex:=5;
+        ft_LUA:                       MyPopupItems[i].ImageIndex:=15;
+        ft_Unknown:                   MyPopupItems[i].ImageIndex:=5;
+        ft_FSBFile:                   MyPopupItems[i].ImageIndex:=12;
         else
           MyPopupItems[i].ImageIndex:=5;
       end;
@@ -892,7 +967,6 @@ begin
     MyPopUpItems[i].Caption:=strViewAllFiles;
     MyPopUpItems[i].tag:=0;
     MyPopUpItems[i].Checked:=true;
-    //MyPopUpItems[i].ImageIndex:=5;
     popupFileTypes.Items.Insert(0, MyPopUpItems[i]);
     MyPopUpItems[i].OnClick:=FileTypePopupMenuHandler;
 
@@ -902,7 +976,6 @@ begin
     MyPopUpItems[i].Caption:='-';
     MyPopUpItems[i].tag:=1;
     MyPopUpItems[i].Checked:=true;
-    //MyPopUpItems[i].ImageIndex:=5;
     popupFileTypes.Items.Insert(1, MyPopUpItems[i]);
   finally
     Filetypes.Free;
@@ -993,7 +1066,8 @@ begin
   else
   if SenderName = 'MenuItemOpenPsychonauts' then
   begin
-    TempPath := SysUtils.IncludeTrailingPathDelimiter(GetProgramFilesFolder) + 'Double Fine Productions\Psychonauts\';
+    TempPath := SysUtils.IncludeTrailingPathDelimiter(GetProgramFilesFolder) +
+      'Double Fine Productions\Psychonauts\';
     if DirectoryExists(TempPath) then
       OpenDialog1.InitialDir := TempPath
     else
@@ -1075,7 +1149,9 @@ begin
 
   SaveDialog1.Filter:='Png files|*.png';
   SaveDialog1.DefaultExt:='.png';
-  SaveDialog1.FileName:= SanitiseFileName( ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+  SaveDialog1.FileName:= SanitiseFileName(
+    ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+
   if SaveDialog1.Execute = false then exit;
 
   DecodeResult:=false;
@@ -1094,17 +1170,20 @@ begin
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS)
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32,
+          DDS_HEADERLESS)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS_PSYCHONAUTS)
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32,
+          DDS_HEADERLESS_PSYCHONAUTS)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32, DDS_HEADERLESS_DOTT)
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32,
+          DDS_HEADERLESS_DOTT)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTFontImage then
@@ -1149,12 +1228,14 @@ procedure TformMain.menuItemDumpLuaClick(Sender: TObject);
 var
   TempStrings: TStringList;
 begin
-  if Tree.RootNodeCount=0 then exit;
-  if Tree.SelectedCount=0 then exit;
+  if Tree.RootNodeCount = 0 then exit;
+  if Tree.SelectedCount = 0 then exit;
 
-  SaveDialog1.Filter:='Lua files|*.lua';
-  SaveDialog1.DefaultExt:='.lua';
-  SaveDialog1.FileName:= SanitiseFileName( ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+  SaveDialog1.Filter :='Lua files|*.lua';
+  SaveDialog1.DefaultExt :='.lua';
+  SaveDialog1.FileName := SanitiseFileName(
+    ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+
   if SaveDialog1.Execute = false then exit;
 
   TempStrings:=TStringList.Create;
@@ -1182,7 +1263,9 @@ begin
 
   SaveDialog1.Filter:='Text files|*.txt';
   SaveDialog1.DefaultExt:='.txt';
-  SaveDialog1.FileName:= SanitiseFileName( ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+  SaveDialog1.FileName:= SanitiseFileName(
+    ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+
   if SaveDialog1.Execute = false then exit;
 
   TempStrings:=TStringList.Create;
@@ -1247,7 +1330,8 @@ begin
     DoLog(strSavingFile + SaveDialog1.FileName);
 
     if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then
-      fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName))
+      fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName),
+        ExtractFileName(SaveDialog1.FileName))
     else
     if fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio then
     begin
@@ -1296,18 +1380,22 @@ begin
     TempNode:=Tree.GetFirst;
     while (tempNode <> nil) do
     begin
-      if (fExplorer.FileType[TempNode.Index] <> ft_Audio) and (fExplorer.FileType[TempNode.Index] <> ft_IMCAudio) then //not an audio file
+      if (fExplorer.FileType[TempNode.Index] <> ft_Audio) and
+        (fExplorer.FileType[TempNode.Index] <> ft_IMCAudio) then //not an audio file
       begin
         TempNode:=Tree.GetNext(TempNode);
         continue;
       end;
 
       if fExplorer.FileType[TempNode.Index] = ft_Audio then
-        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index])
+        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir),
+          fExplorer.FileName[TempNode.Index])
       else
       if fExplorer.FileType[TempNode.Index] = ft_IMCAudio then
       begin
-        DestFile := TFileStream.Create(IncludeTrailingPathDelimiter(Dir) + ChangeFileExt(fExplorer.FileName[TempNode.Index], '.wav'), fmOpenWrite or fmCreate);
+        DestFile := TFileStream.Create(IncludeTrailingPathDelimiter(Dir) +
+          ChangeFileExt(fExplorer.FileName[TempNode.Index], '.wav'),
+            fmOpenWrite or fmCreate);
         try
           DecodeResult := fExplorer.SaveIMCToStream(TempNode.Index, DestFile);
         finally
@@ -1334,6 +1422,10 @@ begin
 end;
 
 procedure TformMain.menuItemSaveAllDDSImagesClick(Sender: TObject);
+const
+  DDSImageFileTypes = [ft_DDSImage, ft_HeaderlessDDSImage, ft_HeaderlessPsychoDDSImage,
+    ft_HeaderlessDOTTDDSImage, ft_DOTTFontImage, ft_DOTTXMLCostumeWithImage,
+    ft_GenericImage];
 var
   TempNode: pVirtualNode;
   DecodeResult: boolean;
@@ -1352,28 +1444,28 @@ begin
     TempNode:=Tree.GetFirst;
     while (tempNode <> nil) do
     begin
-      if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
-        if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
-          if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDOTTDDSImage) then
-            if(fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
-              begin //not DDS image
-                TempNode:=Tree.GetNext(TempNode);
-                continue;
-              end;
+      if not (fExplorer.FileType[TempNode.Index] in DDSImageFileTypes) then
+      begin
+        TempNode:=Tree.GetNext(TempNode);
+        continue;
+      end;
 
-      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
-        DDSType := DDS_HEADERLESS
-      else
-      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessPsychoDDSImage then
-        DDSType := DDS_HEADERLESS_PSYCHONAUTS
-      else
-      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDOTTDDSImage then
-        DDSType := DDS_HEADERLESS_DOTT
-      else
-        DDSType := DDS_NORMAL;
 
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'), DDSType);
+      DDSType := DDS_NORMAL;
+      case fExplorer.FileType[TempNode.Index] of
+        ft_DDSImage:                  DDSType := DDS_NORMAL;
+        ft_HeaderlessDDSImage:        DDSType := DDS_HEADERLESS;
+        ft_HeaderlessPsychoDDSImage:  DDSType := DDS_HEADERLESS_PSYCHONAUTS;
+        ft_HeaderlessDOTTDDSImage:    DDSType := DDS_HEADERLESS_DOTT;
+      end;
+
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) +
+        ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+
+      DecodeResult:=fExplorer.SaveDDSToFile(TempNode.Index,
+        IncludeTrailingPathDelimiter(Dir),
+        ChangeFileExt(fExplorer.FileName[TempNode.Index], '.dds'),
+        DDSType);
 
       if DecodeResult = false then
       begin
@@ -1396,6 +1488,10 @@ begin
 end;
 
 procedure TformMain.menuItemSaveAllImagesClick(Sender: TObject);
+const
+  AllImageFileTypes = [ft_DDSImage, ft_HeaderlessDDSImage, ft_HeaderlessPsychoDDSImage,
+    ft_HeaderlessDOTTDDSImage, ft_DOTTFontImage, ft_DOTTXMLCostumeWithImage,
+    ft_GenericImage];
 var
   TempPng: TPngImage;
   TempBmp: TBitmap;
@@ -1403,6 +1499,7 @@ var
   TempNode: pVirtualNode;
   DecodeResult: boolean;
   Dir: string;
+  DDSType: TDDSType;
 begin
   if Tree.RootNodeCount=0 then exit;
   Dir := SaveFolderDialog;
@@ -1419,54 +1516,40 @@ begin
     TempNode:=Tree.GetFirst;
     while (tempNode <> nil) do
     begin
-      if (fExplorer.FileType[TempNode.Index] <> ft_DDSImage) then
-        if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDDSImage) then
-          if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessPsychoDDSImage) then
-            if (fExplorer.FileType[TempNode.Index] <> ft_HeaderlessDOTTDDSImage) then
-              if (fExplorer.FileType[TempNode.Index] <> ft_DOTTFontImage) then
-                if (fExplorer.FileType[TempNode.Index] <> ft_DOTTXMLCostumeWithImage) then
-                  if (fExplorer.FileType[TempNode.Index] <> ft_GenericImage) then  //not an image
-                  begin
-                    TempNode:=Tree.GetNext(TempNode);
-                    continue;
-                  end;
+      if not (fExplorer.FileType[TempNode.Index] in AllImageFileTypes) then
+      begin
+        TempNode:=Tree.GetNext(TempNode);
+        continue;
+      end;
 
       TempBmp32.Clear;
       TempBmp.Assign(nil);
 
-      DecodeResult := false;
-      if fExplorer.FileType[TempNode.Index] = ft_DDSImage then
-      begin
-        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32)
-      end
-      else
-      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDDSImage then
-      begin
-        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS)
-      end
-      else
-      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessPsychoDDSImage then
-      begin
-        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS_PSYCHONAUTS)
-      end
-      else
-      if fExplorer.FileType[TempNode.Index] = ft_HeaderlessDOTTDDSImage then
-      begin
-        DecodeResult:=fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDS_HEADERLESS_DOTT)
-      end
-      else
+
       if fExplorer.FileType[TempNode.Index] = ft_DOTTFontImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDOTTFont(TempNode.Index, TempBmp32);
+        DecodeResult := fExplorer.DrawImageDOTTFont(TempNode.Index, TempBmp32);
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_DOTTXMLCostumeWithImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDOTTCostume(TempNode.Index, TempBmp32);
+        DecodeResult := fExplorer.DrawImageDOTTCostume(TempNode.Index, TempBmp32);
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_GenericImage then
-        DecodeResult:=fExplorer.DrawImageGeneric(TempNode.Index, TempBmp32);
+        DecodeResult := fExplorer.DrawImageGeneric(TempNode.Index, TempBmp32)
+      else
+      begin //All other DDS types
+        DDSType := DDS_NORMAL;
+        case fExplorer.FileType[TempNode.Index] of
+          ft_DDSImage:                  DDSType := DDS_NORMAL;
+          ft_HeaderlessDDSImage:        DDSType := DDS_HEADERLESS;
+          ft_HeaderlessPsychoDDSImage:  DDSType := DDS_HEADERLESS_PSYCHONAUTS;
+          ft_HeaderlessDOTTDDSImage:    DDSType := DDS_HEADERLESS_DOTT;
+        end;
+
+        DecodeResult := fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDSType);
+      end;
 
       if DecodeResult = false then
       begin
@@ -1477,8 +1560,12 @@ begin
 
       TempBmp.Assign(TempBmp32);
       TempPng.Assign(TempBmp);
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      TempPng.SaveToFile(IncludeTrailingPathDelimiter(Dir) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.png'));
+
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) +
+        ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+
+      TempPng.SaveToFile(IncludeTrailingPathDelimiter(Dir) +
+        ChangeFileExt(fExplorer.FileName[TempNode.Index], '.png'));
 
       Application.ProcessMessages;
       TempNode:=Tree.GetNext(TempNode);
@@ -1522,8 +1609,12 @@ begin
 
       OutStrings.Text :=( DecompileLuaToString(TempNode.Index) );
 
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      OutStrings.SaveToFile(IncludeTrailingPathDelimiter(Dir) +  ChangeFileExt(fExplorer.FileName[TempNode.Index], '.lua'));
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) +
+        ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+
+      OutStrings.SaveToFile(IncludeTrailingPathDelimiter(Dir) +
+        ChangeFileExt(fExplorer.FileName[TempNode.Index], '.lua'));
+
       OutStrings.Clear;
 
       Application.ProcessMessages;
@@ -1581,8 +1672,12 @@ begin
       if fExplorer.FileType[TempNode.Index] = ft_DelimitedText then
         fExplorer.ReadDelimitedText(TempNode.Index, TempStrings);
 
-      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-      TempStrings.SaveToFile( IncludeTrailingPathDelimiter(Dir) + ChangeFileExt(fExplorer.FileName[TempNode.Index], '.txt') );
+      ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) +
+        ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+
+      TempStrings.SaveToFile( IncludeTrailingPathDelimiter(Dir) +
+        ChangeFileExt(fExplorer.FileName[TempNode.Index], '.txt') );
+
       TempNode:=Tree.GetNext(TempNode);
       Application.ProcessMessages;
     end;
@@ -1621,9 +1716,11 @@ begin
       end
       else
       begin
-        ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
-        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index]);
+        ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) +
+          ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
 
+        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir),
+          fExplorer.FileName[TempNode.Index]);
       end;
 
       TempNode:=Tree.GetNext(TempNode);
@@ -1648,7 +1745,9 @@ begin
 
   SaveDialog1.Filter:='DDS files|*.dds';
   SaveDialog1.DefaultExt:='.dds';
-  SaveDialog1.FileName:= SanitiseFileName (ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' ) );
+  SaveDialog1.FileName:= SanitiseFileName (ChangeFileExt(
+    fExplorer.FileName[Tree.focusednode.Index], '' ) );
+
   if SaveDialog1.Execute = false then exit;
 
   DecodeResult:=false;
@@ -1668,9 +1767,15 @@ begin
       DDSType := DDS_NORMAL;
 
 
-    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage)  or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage)  or (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) then
+    if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or
+       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage)  or
+       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage)  or
+       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) then
     begin
-      DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName), DDSType)
+      DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,
+        ExtractFilePath(SaveDialog1.FileName),
+        ExtractFileName(SaveDialog1.FileName),
+        DDSType)
     end
     else
     begin
@@ -1678,7 +1783,8 @@ begin
       DecodeResult:=false;
     end;
   finally
-    if DecodeResult = true then DoLog(strDone);
+    if DecodeResult = true then
+      DoLog(strDone);
     EnableDisableButtonsGlobal(true);
   end;
 
@@ -1719,7 +1825,8 @@ begin
   DoLog(strSavingFile + SaveDialog1.FileName);
   EnableDisableButtonsGlobal(false);
   try
-    fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName), ExtractFileName(SaveDialog1.FileName));
+    fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName),
+      ExtractFileName(SaveDialog1.FileName));
   finally
     DoLog(strDone);
     EnableDisableButtonsGlobal(true);
@@ -1741,14 +1848,37 @@ begin
   EnableDisableButtonsGlobal(false);
   try
     try
-      fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
-      ShellExec(0, 'open', fHexEditorPath, '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(fHexEditorPath), SW_SHOWNORMAL);
+      fExplorer.SaveFile(Tree.focusednode.Index,
+        IncludeTrailingPathDelimiter(Getwindowstempfolder),
+        ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
+
+      ShellExec(0,
+        'open',
+        fHexEditorPath,
+        '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+        ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"',
+        ExtractFilePath(fHexEditorPath),
+        SW_SHOWNORMAL);
+
     except on E: EFCreateError do
     begin //get new name if its already there and open
-      NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
+      NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+        ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])),
+        ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]),
+        '-copy');
+
       DoLog(strErrHexFileExists + NewName);
-      fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName));
-      ShellExec(0, 'open', fHexEditorPath, '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(fHexEditorPath), SW_SHOWNORMAL);
+
+      fExplorer.SaveFile(Tree.focusednode.Index,
+        IncludeTrailingPathDelimiter(Getwindowstempfolder),
+        ExtractFileName(NewName));
+
+      ShellExec(0,
+        'open',
+        fHexEditorPath, '"' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+        ExtractFileName(NewName) + '"',
+        ExtractFilePath(fHexEditorPath),
+        SW_SHOWNORMAL);
     end;
     end;
 
@@ -1757,9 +1887,11 @@ begin
       fFilesToCleanUp := TStringList.Create;
 
     if NewName <> '' then
-      fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(NewName))
+      fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) +
+        ExtractFileName(NewName))
     else
-      fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
+      fFilesToCleanUp.Add( IncludeTrailingPathDelimiter(Getwindowstempfolder) +
+        ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])));
   finally
     EnableDisableButtonsGlobal(true);
   end;
@@ -1811,15 +1943,43 @@ begin
     EnableDisableButtonsGlobal(false);
     try
       try
-        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), false);
-        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+        fExplorer.SaveFile(Tree.focusednode.Index,
+          IncludeTrailingPathDelimiter(Getwindowstempfolder),
+          ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])),
+          false);
+
+        ShellExec(0,
+          'open',
+          ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName),
+          strCmdLineOpenAndDelete + ' "' +
+          IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+          ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])) +'"',
+          ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+
         Exit;
       except on E: EFCreateError do
       begin //get new name if its already there and open
-        NewName := FindUnusedFileName( IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])), ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]), '-copy');
+        NewName := FindUnusedFileName(
+          IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+          ExtractFileName(SanitiseFileName(fExplorer.FileName[Tree.focusednode.Index])),
+          ExtractFileExt(fExplorer.FileName[Tree.focusednode.Index]),
+          '-copy');
+
         DoLog(strErrHexFileExists + NewName);
-        fExplorer.SaveFile(Tree.focusednode.Index, IncludeTrailingPathDelimiter(Getwindowstempfolder), ExtractFileName(NewName), false);
-        ShellExec(0, 'open', ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName), strCmdLineOpenAndDelete + ' "' + IncludeTrailingPathDelimiter( GetWindowsTempFolder) + ExtractFileName(NewName) +'"', ExtractFilePath(Application.ExeName), SW_SHOWNORMAL);
+
+        fExplorer.SaveFile(Tree.focusednode.Index,
+          IncludeTrailingPathDelimiter(Getwindowstempfolder),
+          ExtractFileName(NewName),
+          false);
+
+        ShellExec(0,
+          'open',
+          ExtractFilePath(application.ExeName) + ExtractFileName(application.ExeName),
+          strCmdLineOpenAndDelete + ' "' +
+          IncludeTrailingPathDelimiter( GetWindowsTempFolder) +
+          ExtractFileName(NewName) +'"', ExtractFilePath(Application.ExeName),
+          SW_SHOWNORMAL);
+
         Exit;
       end;
       end;
@@ -1829,7 +1989,8 @@ begin
     end;
   end;
 
-  if (fExplorer.FileType[Tree.focusednode.Index] <> ft_Audio) and (fExplorer.FileType[Tree.focusednode.Index] <> ft_IMCAudio) then
+  if (fExplorer.FileType[Tree.focusednode.Index] <> ft_Audio) and
+     (fExplorer.FileType[Tree.focusednode.Index] <> ft_IMCAudio) then
   begin
     DoLog(strErrorUnrecognisedAudioType);
     exit;
@@ -1854,7 +2015,8 @@ begin
     //fAudioStream.SaveToFile('c:\users\ben\desktop\musictest.wav');
 
     fAudioStream.Position:=0;
-    fAudioHandle := BASS_StreamCreateFile(True, fAudioStream.Memory, 0, fAudioStream.Size, BASS_UNICODE);
+    fAudioHandle := BASS_StreamCreateFile(True, fAudioStream.Memory, 0, fAudioStream.Size,
+      BASS_UNICODE);
 
     //if fAudioHandle = 0 then exit;
 
@@ -1877,7 +2039,9 @@ begin
     //lblCurrentlyPlaying.Caption :=fExplorer.FileName[Tree.focusednode.Index];
 
     TrackBarAudio.Value := 0;
-    TrackBarAudio.Maximum:= round(BASS_ChannelBytes2Seconds(fAudioHandle, BASS_ChannelGetLength(fAudioHandle, BASS_POS_BYTE)));
+    TrackBarAudio.Maximum:= round(BASS_ChannelBytes2Seconds(fAudioHandle,
+      BASS_ChannelGetLength(fAudioHandle, BASS_POS_BYTE)));
+
     fTrackBarChanging := false;
 
     Timer1.Enabled := true;
@@ -1913,7 +2077,8 @@ procedure TformMain.Timer1Timer(Sender: TObject);
 var
   Seconds: integer;
 begin
-  Seconds :=  round(BASS_ChannelBytes2Seconds(fAudioHandle, BASS_ChannelGetPosition(fAudioHandle, BASS_POS_BYTE)));
+  Seconds :=  round(BASS_ChannelBytes2Seconds(fAudioHandle,
+    BASS_ChannelGetPosition(fAudioHandle, BASS_POS_BYTE)));
   if Seconds < 0 then
     lblTime.caption := '00:00' + fTotalTime
   else
@@ -1928,7 +2093,9 @@ procedure TformMain.TrackBarAudioChangedValue(Sender: TObject;
   NewValue: Integer);
 begin
   fTrackBarChanging:=true;
-  BASS_ChannelSetPosition(fAudioHandle, BASS_ChannelSeconds2Bytes(fAudioHandle, TrackBarAudio.Value)  , BASS_POS_BYTE);
+  BASS_ChannelSetPosition(fAudioHandle, BASS_ChannelSeconds2Bytes(fAudioHandle,
+    TrackBarAudio.Value)  , BASS_POS_BYTE);
+
   fTrackBarChanging:=false;
 end;
 
@@ -1949,7 +2116,8 @@ var
   IniFile: TIniFile;
 begin
   fHexEditorPath := '';
-  if FileExists(ExtractFilePath(Application.ExeName) + 'DoublefineExplorer.ini') = false then exit;
+  if FileExists(ExtractFilePath(Application.ExeName) + 'DoublefineExplorer.ini') = false then
+    exit;
 
   IniFile := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'DoublefineExplorer.ini');
   try
@@ -1963,19 +2131,20 @@ end;
 
 
 {***********************   External decompiler Stuff   ***********************}
-function TformMain.DecompileLuaToString(FileNo: integer): string;
+function TformMain.DecompileLuaToString(FileNo: cardinal): string;
 var
   TempStringList: TStringList;
   LuaFile: string;
 begin
   Result := '';
-  if (FileNo < 0) or (FileNo > Tree.RootNodeCount) then
+  if FileNo > Tree.RootNodeCount then
   begin
     DoLog(strErrorInvalidFileNoLuaDec);
     exit;
   end;
 
-  LuaFile := IncludeTrailingPathDelimiter(Getwindowstempfolder) + ExtractFileName(SanitiseFileName(fExplorer.FileName[FileNo]));
+  LuaFile := IncludeTrailingPathDelimiter(Getwindowstempfolder) +
+    ExtractFileName(SanitiseFileName(fExplorer.FileName[FileNo]));
   try
     fExplorer.SaveFile(FileNo, ExtractFilePath(LuaFile), ExtractFileName(LuaFile), false);
   except on E: EFCreateError do
@@ -2037,8 +2206,8 @@ begin
       dwMode := SetErrorMode(SEM_NOGPFAULTERRORBOX);
       SetErrorMode(dwMode or SEM_NOGPFAULTERRORBOX);
 
-      if CreateProcess(nil, PChar(ACommand + ' ' + AParameters), @saSecurity, @saSecurity, true, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup,
-        piProcess) then
+      if CreateProcess(nil, PChar(ACommand + ' ' + AParameters), @saSecurity, @saSecurity,
+        true, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup, piProcess) then
         try
           repeat
             dRunning := WaitForSingleObject(piProcess.hProcess, 100);

@@ -17,8 +17,8 @@ interface
 
 uses
   classes, sysutils, Contnrs, forms,
-  uFileReader, uMemReader, uDFExplorer_BaseBundleManager, uDFExplorer_Types, uDFExplorer_Funcs,
-  uWaveWriter, JCLSysInfo, JCLShell, Windows, uMPEGHeaderCheck;
+  uFileReader, uMemReader, uDFExplorer_BaseBundleManager, uDFExplorer_Types,
+  uDFExplorer_Funcs, uWaveWriter, JCLSysInfo, JCLShell, Windows, uMPEGHeaderCheck;
 
 type
   TFSBManager = class (TBundleManager)
@@ -32,14 +32,16 @@ type
     function GetFileName(Index: integer): string; override;
     function GetFileSize(Index: integer): integer;  override;
     function GetFileOffset(Index: integer): LongWord; override;
-    function DecryptFSB(InStream: TStream; Offset, Size: integer; OutStream: TStream; Key: Array of byte; KeyOffset: integer = -1): boolean;
+    function DecryptFSB(InStream: TStream; Offset, Size: integer; OutStream: TStream;
+      Key: Array of byte; KeyOffset: integer = -1): boolean;
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     function GetFSB5Offset(InValue: Dword): DWord;
     procedure Log(Text: string); override;
     procedure ParseFSB5;
     procedure ParseFSB4;
-    procedure SaveFixedMP3Stream(InStream, OutStream: TStream; FileSize, Channels: integer);
+    procedure SaveFixedMP3Stream(InStream, OutStream: TStream; FileSize,
+      Channels: integer);
   public
     BundleFiles: TObjectList;
     constructor Create(ResourceFile: string); override;
@@ -586,7 +588,8 @@ begin
 
   Log(strSavingFile + FileName);
 
-  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName, fmOpenWrite or fmCreate);
+  SaveFile:=tfilestream.Create(IncludeTrailingPathDelimiter(DestDir)  + FileName,
+    fmOpenWrite or fmCreate);
   try
     SaveFileToStream(FileNo,SaveFile);
   finally
@@ -603,8 +606,10 @@ var
 begin
   for I := 0 to BundleFiles.Count - 1 do
   begin
-    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) + ExtractPartialPath( TFSBFile(BundleFiles.Items[i]).FileName)));
-    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +  TFSBFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
+    ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(DestDir) +
+      ExtractPartialPath( TFSBFile(BundleFiles.Items[i]).FileName)));
+    SaveFile:=TFileStream.Create(IncludeTrailingPathDelimiter(DestDir) +
+      TFSBFile(BundleFiles.Items[i]).FileName , fmOpenWrite or fmCreate);
     try
       SaveFileToStream(i, SaveFile);
     finally
@@ -643,7 +648,8 @@ begin
     try
       fBundle.Position := TFSBFile(BundleFiles.Items[FileNo]).Offset;
       TempStream.CopyFrom(fBundle, TFSBFile(BundleFiles.Items[FileNo]).size);
-      DecryptFSB(Tempstream, 0, TempStream.size, fMemoryBundle, FSBKey, TFSBFile(BundleFiles.Items[FileNo]).Offset); //Provide the offset as last param so we know where the key should start from in the original file
+      DecryptFSB(Tempstream, 0, TempStream.size, fMemoryBundle, FSBKey,
+        TFSBFile(BundleFiles.Items[FileNo]).Offset); //Provide the offset as last param so we know where the key should start from in the original file
     finally
       TempStream.Free;
     end;
@@ -658,9 +664,13 @@ begin
 
   Ext:=Uppercase(ExtractFileExt(TFSBFile(BundleFiles.Items[FileNo]).FileName));
 
-  if (TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM8) or ((TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM16)) then
+  if (TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM8) or
+    ((TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_PCM16)) then
   begin
-    WavStream := TWaveStream.Create(DestStream, TFSBFile(BundleFiles.Items[FileNo]).Channels, TFSBFile(BundleFiles.Items[FileNo]).Bits, TFSBFile(BundleFiles.Items[FileNo]).Freq );
+    WavStream := TWaveStream.Create(DestStream,
+      TFSBFile(BundleFiles.Items[FileNo]).Channels,
+      TFSBFile(BundleFiles.Items[FileNo]).Bits,
+      TFSBFile(BundleFiles.Items[FileNo]).Freq );
     try
       WavStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
     finally
@@ -670,7 +680,9 @@ begin
   else
   if (TFSBFile(BundleFiles.Items[FileNo]).Codec = FMOD_SOUND_FORMAT_MPEG) then //fix broken mp3's
   begin
-    SaveFixedMP3Stream(fMemoryBundle, DestStream, TFSBFile(BundleFiles.Items[FileNo]).Size, TFSBFile(BundleFiles.Items[FileNo]).Channels);
+    SaveFixedMP3Stream(fMemoryBundle, DestStream,
+      TFSBFile(BundleFiles.Items[FileNo]).Size,
+      TFSBFile(BundleFiles.Items[FileNo]).Channels);
   end
   else
     DestStream.CopyFrom(fMemoryBundle, TFSBFile(BundleFiles.Items[FileNo]).Size);
@@ -696,7 +708,8 @@ begin
 		result := false;
 end;
 
-procedure TFSBManager.SaveFixedMP3Stream(InStream, OutStream: TStream; FileSize, Channels: integer);
+procedure TFSBManager.SaveFixedMP3Stream(InStream, OutStream: TStream; FileSize,
+  Channels: integer);
 var
 	Frame, FrameSize, n: integer;
   Buffer: TBuffer;
