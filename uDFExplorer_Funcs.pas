@@ -37,7 +37,7 @@ uses
   function SwapEndianDWord(Value: integer): integer; register;
   function SwapEndianWord(const Value: Word): Word; inline;
   function FindParamIndex(Param: string): integer;
-  function FindFileHeader(SearchStream: TExplorerMemoryStream; StartSearchAt,
+  function FindFileHeader(SearchStream: TStream; StartSearchAt,
     EndSearchAt: Integer; Header: string): integer;
   procedure RemoveReadOnlyFileAttribute(FileName: string);
   procedure GetSteamLibraryPaths(LibraryPaths: TStringList);
@@ -969,10 +969,11 @@ begin
 end;
 
 
-function FindFileHeader(SearchStream: TExplorerMemoryStream;
+function FindFileHeader(SearchStream: TStream;
   StartSearchAt, EndSearchAt: Integer; Header: string): integer;
 var
   HeaderLength, Index: integer;
+  Tempbyte: byte;
 begin
   Result:=-1;
   Index:=1;
@@ -986,7 +987,8 @@ begin
   SearchStream.Position:=StartSearchAt;
   while SearchStream.Position < EndSearchAt do
   begin
-    if Chr(SearchStream.ReadByte) <> Header[Index] then
+    SearchStream.Read(TempByte, 1);
+    if Chr(TempByte) <> Header[Index] then
     begin
       if Index > 1 then
         SearchStream.Position := SearchStream.Position  -1;

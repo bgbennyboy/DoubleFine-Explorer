@@ -544,7 +544,8 @@ begin
       (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or
       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage) or
       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage) or
-      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage);
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) or
+      (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage);
     menuItemDumpText.Visible :=
       (fExplorer.FileType[Tree.focusednode.Index] = ft_Text) or
       (fExplorer.FileType[Tree.focusednode.Index] = ft_DelimitedText) or
@@ -585,6 +586,10 @@ begin
   begin
     if (fExplorer.FileType[i] = ft_GenericImage) or
        (fExplorer.FileType[i] = ft_DOTTFontImage) or
+       (fExplorer.FileType[i] = ft_DDSImage) or
+       (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or
+       (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or
+       (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage) or
        (fExplorer.FileType[i] = ft_DOTTXMLCostumeWithImage) then
     begin
         menuItemSaveAllImages.Visible:=true;
@@ -593,7 +598,8 @@ begin
     if (fExplorer.FileType[i] = ft_DDSImage) or
        (fExplorer.FileType[i] = ft_HeaderlessDDSImage) or
        (fExplorer.FileType[i] = ft_HeaderlessPsychoDDSImage)  or
-       (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage) then
+       (fExplorer.FileType[i] = ft_HeaderlessDOTTDDSImage) or
+       (fExplorer.FileType[i] = ft_DOTTXMLCostumeWithImage) then
     begin
       menuItemSaveAllImages.Visible:=true;
       menuItemSaveAllDDSImages.Visible:=true;
@@ -721,7 +727,8 @@ begin
   if fExplorer.FileType[Tree.FocusedNode.Index] = ft_DOTTXMLCostumeWithImage then
   begin
     panelPreviewImage.BringToFront;
-    fExplorer.DrawImageDOTTCostume(Tree.focusednode.Index, imagePreview.Bitmap);
+    fExplorer.DrawImageDDS(Tree.focusednode.Index, imagePreview.Bitmap,
+      DDS_HEADERLESS_DOTT_COSTUME);
   end;
 
 
@@ -1193,7 +1200,8 @@ begin
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage then
       begin
-        DecodeResult:=fExplorer.DrawImageDOTTCostume(Tree.focusednode.Index, TempBmp32)
+        DecodeResult:=fExplorer.DrawImageDDS(Tree.focusednode.Index, TempBmp32,
+          DDS_HEADERLESS_DOTT_COSTUME)
       end
       else
       if fExplorer.FileType[Tree.focusednode.Index] = ft_GenericImage then
@@ -1424,8 +1432,7 @@ end;
 procedure TformMain.menuItemSaveAllDDSImagesClick(Sender: TObject);
 const
   DDSImageFileTypes = [ft_DDSImage, ft_HeaderlessDDSImage, ft_HeaderlessPsychoDDSImage,
-    ft_HeaderlessDOTTDDSImage, ft_DOTTFontImage, ft_DOTTXMLCostumeWithImage,
-    ft_GenericImage];
+    ft_HeaderlessDOTTDDSImage, ft_DOTTXMLCostumeWithImage];
 var
   TempNode: pVirtualNode;
   DecodeResult: boolean;
@@ -1457,6 +1464,7 @@ begin
         ft_HeaderlessDDSImage:        DDSType := DDS_HEADERLESS;
         ft_HeaderlessPsychoDDSImage:  DDSType := DDS_HEADERLESS_PSYCHONAUTS;
         ft_HeaderlessDOTTDDSImage:    DDSType := DDS_HEADERLESS_DOTT;
+        ft_DOTTXMLCostumeWithImage:   DDSType := DDS_HEADERLESS_DOTT_COSTUME;
       end;
 
       ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) +
@@ -1531,11 +1539,6 @@ begin
         DecodeResult := fExplorer.DrawImageDOTTFont(TempNode.Index, TempBmp32);
       end
       else
-      if fExplorer.FileType[TempNode.Index] = ft_DOTTXMLCostumeWithImage then
-      begin
-        DecodeResult := fExplorer.DrawImageDOTTCostume(TempNode.Index, TempBmp32);
-      end
-      else
       if fExplorer.FileType[TempNode.Index] = ft_GenericImage then
         DecodeResult := fExplorer.DrawImageGeneric(TempNode.Index, TempBmp32)
       else
@@ -1546,6 +1549,7 @@ begin
           ft_HeaderlessDDSImage:        DDSType := DDS_HEADERLESS;
           ft_HeaderlessPsychoDDSImage:  DDSType := DDS_HEADERLESS_PSYCHONAUTS;
           ft_HeaderlessDOTTDDSImage:    DDSType := DDS_HEADERLESS_DOTT;
+          ft_DOTTXMLCostumeWithImage:   DDSType := DDS_HEADERLESS_DOTT_COSTUME;
         end;
 
         DecodeResult := fExplorer.DrawImageDDS(TempNode.Index, TempBmp32, DDSType);
@@ -1764,13 +1768,17 @@ begin
     if fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage then
       DDSType := DDS_HEADERLESS_DOTT
     else
+    if fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage then
+      DDSType := DDS_HEADERLESS_DOTT_COSTUME
+    else
       DDSType := DDS_NORMAL;
 
 
     if (fExplorer.FileType[Tree.focusednode.Index] = ft_DDSImage) or
        (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDDSImage)  or
        (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessPsychoDDSImage)  or
-       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) then
+       (fExplorer.FileType[Tree.focusednode.Index] = ft_HeaderlessDOTTDDSImage) or
+       (fExplorer.FileType[Tree.focusednode.Index] = ft_DOTTXMLCostumeWithImage) then
     begin
       DecodeResult:=fExplorer.SaveDDSToFile(Tree.focusednode.Index,
         ExtractFilePath(SaveDialog1.FileName),

@@ -46,6 +46,7 @@ private
   function WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsychonautsDDS; SourceStream,
     DestStream: TStream): boolean;
   function WriteHeaderlessDOTT_DDSToStream(SourceStream, DestStream: TStream): boolean;
+  function WriteHeaderlessDOTT_DDS_CostumeToStream(SourceStream, DestStream: TStream): boolean;
   procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE;
     DestStream: TStream; IsCubemap: boolean = false);
 public
@@ -53,7 +54,6 @@ public
   destructor Destroy; override;
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDOTTFont(FileIndex: integer; DestBitmap: TBitmap32): boolean;
-  function DrawImageDOTTCostume(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType:
     TDDSType = DDS_NORMAL): boolean;
   function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType:
@@ -301,69 +301,6 @@ begin
   end;
 end;
 
-function TDFExplorerBase.DrawImageDOTTCostume(FileIndex: integer;
-  DestBitmap: TBitmap32): boolean;
-var
-  TempStream, TempStreamJustMXT5, ImageStream: TExplorerMemoryStream;
-  HeaderIndex: integer;
-begin
-  Result:=false;
-
-  TempStream:=TExplorerMemoryStream.Create;
-  try
-    fBundle.SaveFileToStream(FileIndex, TempStream);
-    TempStream.Position:=0;
-
-    //Not all DOTT XML costumes have an image inside them but many do
-    HeaderIndex := FindFileHeader(TempStream, 0, TempStream.Size, 'MXT5');
-    if HeaderIndex = -1 then
-    begin
-      Log('XML doesnt contain costume image (not all of them do) ' +
-        fBundle.FileName[FileIndex]);
-      DestBitmap.SetSize(0,0);
-      Exit;
-    end;
-
-
-    TempStreamJustMXT5 := TExplorerMemoryStream.Create;
-    try
-      //Copy it out to a new stream which we can pass to the decoder -
-      //it expects a stream thats just a MXT5 texture with no additional header
-      TempStream.Position := HeaderIndex;
-      TempStreamJustMXT5.CopyFrom(TempStream, TempStream.Size - TempStream.Position);
-      TempStream.Clear;
-      TempStreamJustMXT5.Position := 0;
-
-      ImageStream:=TExplorerMemoryStream.Create;
-      try
-        if WriteHeaderlessDOTT_DDSToStream(TempStreamJustMXT5, ImageStream) = false then
-        begin
-          Log('Image Decode failed! ' + fBundle.FileName[FileIndex]);
-          Exit;
-        end;
-
-        DestBitmap.Clear();
-        destbitmap.CombineMode:=cmBlend;
-        destBitmap.DrawMode:=dmOpaque;
-        if DrawImage(ImageStream, DestBitmap)=false then
-        begin
-          Log('Image Decode failed! ' + fBundle.FileName[FileIndex]);
-          Exit;
-        end;
-
-        Result:=true;
-      finally
-        ImageStream.Free;
-      end;
-    finally
-      TempStreamJustMXT5.Free;
-    end;
-  finally
-    TempStream.Free;
-  end;
-
-end;
-
 function TDFExplorerBase.DrawImageDOTTFont(FileIndex: integer;
   DestBitmap: TBitmap32): boolean;
 var
@@ -497,6 +434,7 @@ function TDFExplorerBase.DrawImageDDS(FileIndex: integer;
   DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
 var
   TempStream, DDSStream: TExplorerMemoryStream;
+  DecodeResult: Boolean;
 begin
   Result:=false;
 
@@ -508,11 +446,23 @@ begin
     DDSStream:=TExplorerMemoryStream.Create;
     try
       case DDSType of
-        DDS_NORMAL: WriteDDSToStream(Tempstream, DDSStream);
-        DDS_HEADERLESS: WriteHeaderlessTexDDSToStream(Tempstream, DDSStream);
-        DDS_HEADERLESS_PSYCHONAUTS: WriteHeaderlessPsychonautsDDSToStream(
-          TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
-        DDS_HEADERLESS_DOTT: WriteHeaderlessDOTT_DDSToStream(TempStream, DDSStream);
+        DDS_NORMAL:                  DecodeResult :=
+            WriteDDSToStream(Tempstream, DDSStream);
+        DDS_HEADERLESS:              DecodeResult :=
+            WriteHeaderlessTexDDSToStream(Tempstream, DDSStream);
+        DDS_HEADERLESS_PSYCHONAUTS:  DecodeResult :=
+            WriteHeaderlessPsychonautsDDSToStream(
+              TPPAKManager(fBundle).PsychoDDS[FileIndex], Tempstream, DDSStream);
+        DDS_HEADERLESS_DOTT:         DecodeResult :=
+            WriteHeaderlessDOTT_DDSToStream(TempStream, DDSStream);
+        DDS_HEADERLESS_DOTT_COSTUME: DecodeResult :=
+            WriteHeaderlessDOTT_DDS_CostumeToStream(TempStream, DDSStream);
+      end;
+
+      if DecodeResult = false then
+      begin
+        Log('DDS Decode failed! ' + fBundle.FileName[FileIndex]);
+        Exit;
       end;
 
       DestBitmap.Clear();
@@ -638,6 +588,43 @@ begin
     Result := true;
   finally
    FreeImage(Img);
+  end;
+end;
+
+function TDFExplorerBase.WriteHeaderlessDOTT_DDS_CostumeToStream(SourceStream,
+  DestStream: TStream): boolean;
+var
+  TempStreamJustMXT5: TExplorerMemoryStream;
+  HeaderIndex: integer;
+begin
+  Result:=false;
+
+
+  SourceStream.Position:=0;
+
+  //Not all DOTT XML costumes have an image inside them but many do
+  HeaderIndex := FindFileHeader(SourceStream, 0, SourceStream.Size, 'MXT5');
+  if HeaderIndex = -1 then
+  begin
+    Log('XML doesnt contain costume image (not all of them do)');
+    Exit;
+  end;
+
+
+  TempStreamJustMXT5 := TExplorerMemoryStream.Create;
+  try
+    //Copy it out to a new stream which we can pass to the decoder -
+    //it expects a stream thats just a MXT5 texture with no additional header
+    SourceStream.Position := HeaderIndex;
+    TempStreamJustMXT5.CopyFrom(SourceStream, SourceStream.Size - SourceStream.Position);
+    TempStreamJustMXT5.Position := 0;
+
+    if WriteHeaderlessDOTT_DDSToStream(TempStreamJustMXT5, DestStream) = false then
+      Exit;
+
+    Result:=true;
+  finally
+    TempStreamJustMXT5.Free;
   end;
 end;
 
@@ -1024,6 +1011,8 @@ begin
             TPPAKManager(fBundle ).PsychoDDS[FileIndex], Tempstream, SaveFile);
         DDS_HEADERLESS_DOTT:
           Result := WriteHeaderlessDOTT_DDSToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS_DOTT_COSTUME:
+          Result := WriteHeaderlessDOTT_DDS_CostumeToStream(Tempstream, SaveFile);
       end;
     finally
       SaveFile.Free;
