@@ -486,7 +486,7 @@ end;
 function TDFExplorerBase.WriteDDSToStream(SourceStream, DestStream: TStream): boolean;
 const
   DDSMagic: cardinal = 542327876; //542327876 = 'DDS '
-  SearchOffsets: array [0..6] of integer = (0, 28, 36, 40, 68, 144, 180);
+  SearchOffsets: array [0..7] of integer = (0, 28, 36, 40, 48, 68, 144, 180);
 var
   DDSnum: cardinal;
   FoundPos, i: integer;

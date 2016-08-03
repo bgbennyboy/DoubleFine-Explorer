@@ -37,6 +37,7 @@ type
     procedure Log(Text: string); override;
     procedure ReadV2Bundle;
     procedure ReadV5Bundle;
+    procedure ReadV6Bundle;
   public
     BundleFiles: TObjectList;
     constructor Create(ResourceFile: string); override;
@@ -150,7 +151,7 @@ begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
      (index > GetFilesCount) then
-    result:=0
+     result:=0
   else
      result:=TDFFile(BundleFiles.Items[Index]).offset;
 end;
@@ -205,6 +206,9 @@ begin
   else
   if Version = 5 then
     ReadV5Bundle
+  else
+  if Version = 6  then
+    ReadV6Bundle
   else
   begin
     Log('WARNING: Unknown DFPF version: ' + inttostr(Version));
@@ -410,7 +414,7 @@ Think this is the structure
     fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 8) ; //fBundle.ReadTriByte;   //when decompressed
     fBundle.Seek(-1, sofromcurrent);
-    FileObject.NameOffset           := (fBundle.ReadDWord)shr 11; //(fbundle.ReadTriByte shr 11); specs wrong - from from byte 3 not 4
+    FileObject.NameOffset           := (fBundle.ReadDWord)shr 11; //(fbundle.ReadTriByte shr 11); specs wrong - from byte 3 not 4
     fBundle.Seek(1, sofromcurrent);
     FileObject.Offset               := fBundle.ReadDWord shr 3;
     fBundle.Seek(-1, soFromCurrent);
@@ -419,7 +423,7 @@ Think this is the structure
     FileObject.FileTypeIndex        := (fBundle.ReadDWord shl 4) shr 24;
       FileObject.FileTypeIndex      := FileObject.FileTypeIndex shr 1; //normalise it
     fBundle.Seek(-3, soFromCurrent);
-    FileObject.CompressionType      := fBundle.ReadByte and 15; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compessed vs decompressed sizes when dumping.
+    FileObject.CompressionType      := fBundle.ReadByte and 15; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compressed vs decompressed sizes when dumping.
 
     case FileObject.CompressionType of
       4: FileObject.Compressed := false;
@@ -476,6 +480,160 @@ Think this is the structure
 
        //Now add file extensions to the files
        //TCaveFile(BundleFiles[i]).FileName := TCaveFile(BundleFiles[i]).FileName + '.' + TCaveFile(BundleFiles[i]).FileExtension;
+    end;
+
+  finally
+    FileExtensions.Free;
+  end;
+
+  if (Assigned(FOnDoneLoading)) then
+	  FOnDoneLoading(numFiles);
+end;
+
+procedure TPAKManager.ReadV6Bundle;
+var
+  FileObject: TDFFile;
+
+  NameDirSize, NumFiles: integer;
+
+  FileExtensionOffset, NameDirOffset, JunkDataOffset, FileRecordsOffset: uint64;
+
+  Marker1, Marker2, FooterOffset1, FooterOffset2, Unknown, BlankBytes1, BlankBytes2: integer;
+
+  i, tempint, FileExtensionCount, fileflags: integer;
+
+  FileExtensions: TStringList;
+const
+  sizeOfFileRecord: integer = 16;
+begin
+  //Read header
+  fBundle.Position      := 8;
+
+
+  FileExtensionOffset   := fBundle.ReadQWord;
+  NameDirOffset         := fBundle.ReadQWord;
+  FileExtensionCount    := fBundle.ReadDWord;
+  NameDirSize := fBundle.ReadDWord;
+  numFiles              := fBundle.ReadDWord;
+
+  Marker1               := fBundle.ReadDWordLe;                  //MARKER 23A1CEABh
+  BlankBytes1           := fBundle.ReadDWord;
+  BlankBytes2           := fBundle.ReadDWord;
+  JunkDataOffset        := fBundle.ReadQWord;  //start of extra bytes in .~p file?
+  FileRecordsOffset     := fBundle.ReadQWord;                  //p table
+  FooterOffset1         := fBundle.ReadQWord;
+  FooterOffset2         := fBundle.ReadQWord;
+  Unknown               := fBundle.ReadDWord;
+  Marker2               := fBundle.ReadDWordLe;                    //marker again  23A1CEABh
+
+
+
+  {Log(' FileExtensionOffset ' + inttostr( FileExtensionOffset) );
+  Log(' NameDirOffset '       + inttostr(NameDirOffset ) );
+  Log(' FileExtension count ' + inttostr( FileExtensionCount) );
+  Log(' NameDirSize? '         + inttostr(NameDirSize ) );
+  Log(' numFiles '            + inttostr(numFiles ) );
+  Log(' Marker 1 '            + inttostr(Marker1 ) );
+  Log(' BlankBytes1 '         + inttostr(BlankBytes1 ) );
+  Log(' BlankBytes2 '         + inttostr(BlankBytes2 ) );
+  Log(' Junk data offset '    + inttostr(JunkDataOffset ) );
+  Log(' FileRecordsOffset '   + inttostr(FileRecordsOffset ) );
+  Log(' Footer offset 1 '     + inttostr(FooterOffset1 ) );
+  Log(' Footer offset 2 '     + inttostr(FooterOffset2 ) );
+  Log(' Unknown '             + inttostr( Unknown) );
+  Log(' Marker 2 '            + inttostr( Marker2) );
+  Log(''); }
+
+
+  //Parse files
+  //Read dwords and shift around rather than read tribyte because with tribyte some bits can fall off the end
+  for I := 0 to numFiles - 1 do   //16 bytes
+  begin
+    fBundle.Position  := FileRecordsOffset + (sizeOfFileRecord * i);
+    FileObject        := TDFFile.Create;
+
+    fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
+    FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 5) ; //fBundle.ReadTriByte shl 3;   //Size when decompressed
+    fBundle.Seek(-1, soFromCurrent);
+
+    fileflags := fBundle.ReadByte; //flags ??
+
+    FileObject.NameOffset           := (fBundle.ReadWord); //Works on small files - test on big ones too
+    fBundle.Seek(2, sofromcurrent);
+
+    FileObject.Offset               := fBundle.ReadDWord shr 1;  //fBundle.ReadTriByte shl 7;   //.ReadDWord shr 3;
+    fBundle.Seek(-1, soFromCurrent);
+
+    FileObject.Size                 := fBundle.ReadDWord ;  //fBundle.ReadTriByte; //(fBundle.ReadDWord shl 5) shr 9; //Size in the p file
+
+    //Use the compression type as filetype - dont think its really comp type in v6 - perhaps flags indicates compression?
+    FileObject.FileTypeIndex        := fBundle.ReadByte shr 2;
+    fBundle.Seek(-1, soFromCurrent);
+
+    FileObject.CompressionType      := fBundle.ReadByte and 15; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compressed vs decompressed sizes when dumping.
+
+     //Get filename from filenames table
+    fBundle.Position    := NameDirOffset + FileObject.NameOffset;
+    FileObject.FileName := PChar(fBundle.ReadString(255));
+
+    case FileObject.CompressionType of
+      1: FileObject.Compressed := false;
+      5: FileObject.Compressed := false;
+
+      2: FileObject.Compressed := true;
+      6: FileObject.Compressed := true;
+      10: FileObject.Compressed := true;
+      14: FileObject.Compressed := true;
+    else Log('Unknown compression type! ' + inttostr(FileObject.CompressionType) + ' ' + FileObject.FileName);
+    end;
+
+
+
+
+    BundleFiles.Add(FileObject);
+
+    {Log('');
+    Log(inttostr(i+1));
+    Log('Start offset in file of record info: ' + inttostr(FileRecordsOffset + (sizeOfFileRecord * i)));
+    Log(FileObject.FileName);
+    Log('Size when decompressed ' + inttostr(FileObject.UnCompressedSize));
+    Log('Flags: ' + inttostr(fileflags));
+    Log('Name offset ' + inttostr(FileObject.NameOffset));
+    Log('Size ' + inttostr(FileObject.Size));
+    Log('Offset ' + inttostr(FileObject.Offset));
+    Log('Filetype index ' + inttostr(FileObject.FileTypeIndex));
+    Log('Comp type ' + inttostr(FileObject.CompressionType));
+    Log('');}
+  end;
+
+
+  //Parse the 'other data' File Extension table
+  FileExtensions := TStringList.Create;
+  try
+    fBundle.Position := FileExtensionOffset;
+    for I := 0 to FileExtensionCount - 1 do
+    begin
+      TempInt := fBundle.ReadDWord;
+      FileExtensions.Add(Trim(fBundle.ReadString( TempInt)));
+      fBundle.Seek(12, soFromCurrent); //12 unknown bytes
+      //Log(FileExtensions[i]);
+    end;
+
+
+    //Match filetype index and populate FileType
+    for I := 0 to BundleFiles.Count -1 do
+    begin
+       //Add file extension
+       TDFFile(BundleFiles[i]).FileExtension :=
+        Trim(FileExtensions[TDFFile(BundleFiles[i]).FileTypeIndex]);
+
+       //Add file type
+       TDFFile(BundleFiles[i]).FileType := GetFileTypeFromFileExtension(
+        TDFFile(BundleFiles[i]).FileExtension,
+        Uppercase(ExtractFileExt(TDFFile(BundleFiles[i]).Filename)) );
+
+       if TDFFile(BundleFiles[i]).FileType = ft_Unknown then
+        Log('Unknown file type ' + TDFFile(BundleFiles[i]).FileExtension);
     end;
 
   finally
