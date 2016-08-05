@@ -213,7 +213,7 @@ begin
   begin
     Log('WARNING: Unknown DFPF version: ' + inttostr(Version));
     if (Version > 5) and (Version <  10) then
-      ReadV5Bundle; //Give it a try - probably wont work but...
+      ReadV6Bundle; //Give it a try - probably wont work but...
   end;
 
 end;
@@ -259,7 +259,6 @@ begin
     fBundle.Position  := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject        := TDFFile.Create;
 
-    fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject.UnCompressedSize     := (fBundle.ReadDWord shr 9) ;
     fBundle.Seek(1, soFromCurrent);
     FileObject.Size                 := (fBundle.ReadDWord shl 1) shr 10; //Size in the p file
@@ -411,7 +410,6 @@ Think this is the structure
     fBundle.Position  := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject        := TDFFile.Create;
 
-    fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 8) ; //fBundle.ReadTriByte;   //when decompressed
     fBundle.Seek(-1, sofromcurrent);
     FileObject.NameOffset           := (fBundle.ReadDWord)shr 11; //(fbundle.ReadTriByte shr 11); specs wrong - from byte 3 not 4
@@ -513,18 +511,18 @@ begin
   FileExtensionOffset   := fBundle.ReadQWord;
   NameDirOffset         := fBundle.ReadQWord;
   FileExtensionCount    := fBundle.ReadDWord;
-  NameDirSize := fBundle.ReadDWord;
+  NameDirSize           := fBundle.ReadDWord;
   numFiles              := fBundle.ReadDWord;
-
-  Marker1               := fBundle.ReadDWordLe;                  //MARKER 23A1CEABh
+  {Marker1               := fBundle.ReadDWordLe;                  //MARKER 23A1CEABh
   BlankBytes1           := fBundle.ReadDWord;
   BlankBytes2           := fBundle.ReadDWord;
-  JunkDataOffset        := fBundle.ReadQWord;  //start of extra bytes in .~p file?
+  JunkDataOffset        := fBundle.ReadQWord;}  //start of extra bytes in .~p file?
+  fBundle.Seek(20, soFromCurrent);
   FileRecordsOffset     := fBundle.ReadQWord;                  //p table
-  FooterOffset1         := fBundle.ReadQWord;
+  {FooterOffset1         := fBundle.ReadQWord;
   FooterOffset2         := fBundle.ReadQWord;
   Unknown               := fBundle.ReadDWord;
-  Marker2               := fBundle.ReadDWordLe;                    //marker again  23A1CEABh
+  Marker2               := fBundle.ReadDWordLe;}                    //marker again  23A1CEABh
 
 
 
@@ -546,31 +544,31 @@ begin
 
 
   //Parse files
-  //Read dwords and shift around rather than read tribyte because with tribyte some bits can fall off the end
-  for I := 0 to numFiles - 1 do   //16 bytes
+  //Data stored in bitfields that arent aligned to bytes
+  for I := 0 to numFiles - 1 do
   begin
+    //Read dwords and shift around rather than read tribyte because with tribyte bits can fall off the end
+
     fBundle.Position  := FileRecordsOffset + (sizeOfFileRecord * i);
     FileObject        := TDFFile.Create;
 
-    fBundle.Position                := FileRecordsOffset + (sizeOfFileRecord * i);
-    FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 5) ; //fBundle.ReadTriByte shl 3;   //Size when decompressed
+    FileObject.UnCompressedSize     :=  (fBundle.ReadDWord shr 5); //Size when decompressed  - 3 bytes + 5 bits of next byte
+
+    fBundle.Seek(-2, soFromCurrent);
+    FileObject.NameOffset           := (fBundle.ReadDWord shl 13) shr 13; //Last 3 bits of byte 4 and next 2 bytes
+
+    fBundle.Seek(2, soFromCurrent);  //Unknown 2 bytes
+
+    FileObject.Offset               := fBundle.ReadDWord shr 1;
+
     fBundle.Seek(-1, soFromCurrent);
+    FileObject.Size                 := (fBundle.ReadDWord shl 7) shr 7;  //Raw size in the p file - uses last bit of byte 11 + next 3 bytes
 
-    fileflags := fBundle.ReadByte; //flags ??
+    FileObject.FileTypeIndex        := fBundle.ReadByte shr 2; //Index in filetype table - first 6 bits
 
-    FileObject.NameOffset           := (fBundle.ReadWord); //Works on small files - test on big ones too
-    fBundle.Seek(2, sofromcurrent);
-
-    FileObject.Offset               := fBundle.ReadDWord shr 1;  //fBundle.ReadTriByte shl 7;   //.ReadDWord shr 3;
     fBundle.Seek(-1, soFromCurrent);
+    FileObject.CompressionType      := Byte(fBundle.ReadByte shl 6) shr 6; //Last 2 bits - have to cast to byte here https://stackoverflow.com/questions/21362455/what-is-the-behaviour-of-shl-and-shr-for-non-register-sized-operands
 
-    FileObject.Size                 := fBundle.ReadDWord ;  //fBundle.ReadTriByte; //(fBundle.ReadDWord shl 5) shr 9; //Size in the p file
-
-    //Use the compression type as filetype - dont think its really comp type in v6 - perhaps flags indicates compression?
-    FileObject.FileTypeIndex        := fBundle.ReadByte shr 2;
-    fBundle.Seek(-1, soFromCurrent);
-
-    FileObject.CompressionType      := fBundle.ReadByte and 15; //Unsure about anding with 15. This field of more use in xbox games where compression will sometimes need XBDecompress. Until we encounter that - just compare compressed vs decompressed sizes when dumping.
 
      //Get filename from filenames table
     fBundle.Position    := NameDirOffset + FileObject.NameOffset;
@@ -578,16 +576,9 @@ begin
 
     case FileObject.CompressionType of
       1: FileObject.Compressed := false;
-      5: FileObject.Compressed := false;
-
       2: FileObject.Compressed := true;
-      6: FileObject.Compressed := true;
-      10: FileObject.Compressed := true;
-      14: FileObject.Compressed := true;
     else Log('Unknown compression type! ' + inttostr(FileObject.CompressionType) + ' ' + FileObject.FileName);
     end;
-
-
 
 
     BundleFiles.Add(FileObject);
@@ -597,8 +588,8 @@ begin
     Log('Start offset in file of record info: ' + inttostr(FileRecordsOffset + (sizeOfFileRecord * i)));
     Log(FileObject.FileName);
     Log('Size when decompressed ' + inttostr(FileObject.UnCompressedSize));
-    Log('Flags: ' + inttostr(fileflags));
     Log('Name offset ' + inttostr(FileObject.NameOffset));
+      Log('File flags: ' + inttostr(fileflags));
     Log('Size ' + inttostr(FileObject.Size));
     Log('Offset ' + inttostr(FileObject.Offset));
     Log('Filetype index ' + inttostr(FileObject.FileTypeIndex));

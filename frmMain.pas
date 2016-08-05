@@ -104,6 +104,7 @@ type
     FileSaveDialogFolder: TFileOpenDialog;
     MenuItemOpenMassiveChalice: TMenuItem;
     MenuItemOpenDOTT: TMenuItem;
+    MenuItemOpenHeadlander: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -1088,7 +1089,10 @@ begin
     OpenDialog1.InitialDir:=GetMassiveChalicePath
   else
   if SenderName = 'MenuItemOpenDOTT' then
-    OpenDialog1.InitialDir:=GetDOTTPath;
+    OpenDialog1.InitialDir:=GetDOTTPath
+  else
+  if SenderName = 'MenuItemOpenHeadlander' then
+    OpenDialog1.InitialDir:=GetHeadlanderPath;
 
   if OpenDialog1.Execute then
     OpenFile;

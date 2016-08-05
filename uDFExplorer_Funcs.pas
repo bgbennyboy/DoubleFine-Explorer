@@ -32,6 +32,7 @@ uses
   function GetMassiveChalicePath: string;
   function GetPsychonautsSteamPath: string;
   function GetDOTTPath: string;
+  function GetHeadlanderPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
   function SwapEndianDWord(Value: integer): integer; register;
@@ -123,6 +124,12 @@ begin
     else
     if ActualFileExt = '.CSV' then
       result:= ft_CSVText //in Costume Quest
+    else
+    if ActualFileExt = '.ATLAS' then
+      result:= ft_Text //in Headlander
+    else
+    if ActualFileExt = '.SCREEN' then
+      result:= ft_Text //in Headlander
     {else
     if ActualFileExt = '.IRRAD' then //in stacking - like delimited but differences
       result:= ft_DelimitedText}
@@ -183,7 +190,7 @@ begin
   else
   if FileExt = 'ProgressionValues' then result:= ft_DelimitedText //
   else
-  if FileExt = 'PrototypeResource' then result:= ft_Other //TODO TEXT
+  if FileExt = 'PrototypeResource' then result:= ft_DelimitedText //
   else
   if FileExt = 'ResourceBuildStamp' then result:= ft_DelimitedText //
   else
@@ -562,6 +569,9 @@ begin
   else
   if FileExt = 'txt' then result:= ft_Text
 
+  {Headlander types}
+  else
+  if FileExt = 'SurfaceGrowthData' then result:= ft_DelimitedText
 
   else
   begin
@@ -851,6 +861,37 @@ begin
   finally
     Paths.free;
   end;
+end;
+
+function GetHeadlanderPath: string;
+const
+  ExtraPath: string = 'steamapps\Common\Headlander\Win\';
+var
+  Paths: TStringList;
+  i: integer;
+begin
+  Result := '';
+  Paths := TStringList.Create;
+  try
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
+  end;
+
+
+  if DirectoryExists(result) = false then
+      if DirectoryExists(
+        'D:\Games\Headlander\Win\') then //Install location on my laptop - TODO remove
+        result := 'D:\Games\Headlander\Win';
 end;
 
 function SanitiseFileName(FileName: string): string;
