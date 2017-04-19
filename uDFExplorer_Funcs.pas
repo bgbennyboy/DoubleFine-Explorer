@@ -32,6 +32,7 @@ uses
   function GetMassiveChalicePath: string;
   function GetPsychonautsSteamPath: string;
   function GetDOTTPath: string;
+  function GetFullThrottlePath: string;
   function GetHeadlanderPath: string;
   function SanitiseFileName(FileName: string): string;
   function ExtractPartialPath(FileName: string): string;
@@ -573,6 +574,10 @@ begin
   else
   if FileExt = 'SurfaceGrowthData' then result:= ft_DelimitedText
 
+  {Full Throttle fypes}
+  else
+  if FileExt = 'wav' then result:= ft_Audio //Cant remember why this function is case sensitive instead of everything being uppercased. Perhaps it helps distinguish between some games?
+
   else
   begin
      result:= ft_Unknown;
@@ -841,6 +846,31 @@ end;
 function GetDOTTPath: string;
 const
   ExtraPath: string = 'steamapps\Common\Day of the Tentacle Remastered\';
+var
+  Paths: TStringList;
+  i: integer;
+begin
+  Result := '';
+  Paths := TStringList.Create;
+  try
+    GetSteamLibraryPaths(Paths);
+    if Paths.Count > 0 then
+      for I := 0 to Paths.Count -1 do
+      begin
+        if DirectoryExists(Paths[i] + ExtraPath) then
+        begin
+          result:=Paths[i] + ExtraPath;
+          break;
+        end;
+      end;
+  finally
+    Paths.free;
+  end;
+end;
+
+function GetFullThrottlePath: string;
+const
+  ExtraPath: string = 'steamapps\Common\Full Throttle Remastered\';
 var
   Paths: TStringList;
   i: integer;

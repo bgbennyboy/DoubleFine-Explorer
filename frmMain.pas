@@ -37,7 +37,8 @@ uses
 
   JCLSysInfo, JCLStrings, JCLShell, JCLFileUtils, bass,
 
-  uDFExplorer_Const, uDFExplorer_Base, uDFExplorer_Types, uDFExplorer_Funcs;
+  uDFExplorer_Const, uDFExplorer_Base, uDFExplorer_Types, uDFExplorer_Funcs,
+  System.ImageList;
 
 type
   TformMain = class(TForm)
@@ -105,6 +106,7 @@ type
     MenuItemOpenMassiveChalice: TMenuItem;
     MenuItemOpenDOTT: TMenuItem;
     MenuItemOpenHeadlander: TMenuItem;
+    MenuItemOpenFullThrottle: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure editFindChange(Sender: TObject);
@@ -178,7 +180,7 @@ var
   MyPopUpItems: array of TMenuItem;
 
 const
-   arrSavedGameTypes: array[0..98] of string =(
+   arrSavedGameTypes: array[0..171] of string =(
      '101', '102', '103', '104', '105', '106', '107', '108',
      '109', '110', '111', '112', '113', '114', '115', '116',
      '117', '118', '119', '120', '121', '122', '123', '124',
@@ -191,7 +193,17 @@ const
      '173', '174', '175', '176', '177', '178', '179', '180',
      '181', '182', '183', '184', '185', '186', '187', '188',
      '189', '190', '191', '192', '193', '194', '195', '196',
-     '197', '198', '199');
+     '197', '198', '199',
+     '1001', '1002', '1003', '1005', '1007', '1010', '1012', '1016',
+     '1017', '1018', '1020', '1021', '1023', '1025', '1026', '1027',
+     '1028', '1029', '1032', '1034', '1036', '1037', '1042', '1043',
+     '1044', '1045', '1046', '1047', '1048', '1049', '1050', '1051',
+     '1052', '1053', '1054', '1055', '1056', '1059', '1060', '1061',
+     '1062', '1064', '1065', '1066', '1067', '1068', '1070', '1073',
+     '1076', '1082', '1083', '1090', '1091', '1094', '1095', '1096',
+     '1097', '1098', '1099', '1100', '1107', '1115', '1116', '1123',
+     '1130', '1131', '1141', '1142', '1144', '1171', '1174', '1190',
+     '1191');
 
 implementation
 
@@ -1092,7 +1104,10 @@ begin
     OpenDialog1.InitialDir:=GetDOTTPath
   else
   if SenderName = 'MenuItemOpenHeadlander' then
-    OpenDialog1.InitialDir:=GetHeadlanderPath;
+    OpenDialog1.InitialDir:=GetHeadlanderPath
+  else
+  if SenderName = 'MenuItemOpenFullThrottle' then
+    OpenDialog1.InitialDir:=GetFullThrottlePath;
 
   if OpenDialog1.Execute then
     OpenFile;

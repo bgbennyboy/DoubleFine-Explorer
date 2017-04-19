@@ -103,6 +103,9 @@ begin
     if Uppercase( ExtractFileExt(BundleFile) ) = '.CLE' then
       fBundle:=TLPAKManager.Create(BundleFile)
     else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.DATA' then
+      fBundle:=TLPAKManager.Create(BundleFile)
+    else
       fBundle:=TPAKManager.Create(BundleFile);
   except on E: EInvalidFile do
     raise;
@@ -527,6 +530,7 @@ var
   Info: TImageFormatInfo;
 begin
 {
+  DOTT:
   4 bytes MXT5
   4 bytes width
   4 bytes height
@@ -538,6 +542,12 @@ begin
   DXT5 texture but is swizzled and stored in YCoCg colour space
   If just put into a DDS container then blue channel appears missing -
   need to convert the colour space
+
+  Full Throttle:
+  4 bytes DXT5
+  4 bytes width
+  4 bytes height
+  X bytes zlib deflate data (without the 78DA header
 }
 
   //First get the width and height and data size
@@ -550,11 +560,12 @@ begin
 
   Sourcestream.Seek(4, soFromCurrent); //Unknown - mipmaps maybe?
 
-  //Check here if gzipped DOTT always? has gzipped dxt files after the 16 byte header
+  //Check if gzipped DOTT always has gzipped dxt files after the 16 byte header
   SourceStream.Read(Temp, 2);
   SourceStream.Seek(-2, soFromCurrent);
   if Temp = 35615 {1F8B} then
   begin
+    Dataoffset := 16;
     TempStream := tmemorystream.Create;
     try
       TempStream.CopyFrom(SourceStream, SourceStream.Size - 16);
@@ -567,15 +578,38 @@ begin
     finally
       TempStream.Free;
     end;
+  end
+  else
+  //Assume its Full Throttle where its deflate without the 78DA header.
+  begin
+    Dataoffset := 12;
+    Sourcestream.Seek(-4, soFromCurrent); //FT doesnt have the extra 4 bytes in the header
+    TempStream := tmemorystream.Create;
+    try
+      TempStream.CopyFrom(SourceStream, SourceStream.Size - 12);
+      Tempstream.Position := 0;
+      SourceStream.Size := 12;
+      ZDecompressStream2(tempstream, sourcestream, -15);
+    finally
+      TempStream.Free;
+    end;
   end;
 
   Datasize := Width * Height;  //The header on the dxt files is only 16 bytes long
-  Dataoffset := 16;
+
 
   AddDDSHeaderToStream(Width, Height, Datasize, DXT5, DestStream, false);
   SourceStream.Position := Dataoffset;
   DestStream.CopyFrom(SourceStream, DataSize);
 
+  //If Full Throttle can quit here
+  if Dataoffset = 12 then
+  begin
+    Result := true;
+    exit;
+  end;
+
+  //DOTT needs colour space conversion
   DestStream.Position := 0;
   InitImage(Img);
   try
@@ -1016,6 +1050,9 @@ begin
       end;
     finally
       SaveFile.Free;
+      if Result = false then
+        Sysutils.DeleteFile(IncludeTrailingPathDelimiter(DestDir) + FileName);
+
     end;
   finally
     TempStream.Free;

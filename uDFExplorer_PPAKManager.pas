@@ -264,12 +264,20 @@ begin
     raise EInvalidFile.Create( strErrInvalidFile );
   end;
 
+  //Annoyingly in some bundles there's an extra 8 bytes in the header and numfiles isnt correct Eg in BBA1.ppf, BBLT.ppf
+  //And in those bundles the dds file size sometimes has extra 8/10? bytes at the end of the header before the ' XT1' starts
+  //Looks like in these bundles dword at offset 12 is different - not sure what it does though - isnt block size I dont think
+
+
+
   //fBundle.Position := 12;
   TotalNumFiles := fBundle.ReadWord;
   Log('TOTAL NUM FILES: ' + inttostr(TotalNumFiles));
   fBundle.seek(2, sofromcurrent); //?
   NumFiles := fBundle.ReadWord;
   Log('NUM DDS Files ' + inttostr(numfiles));
+
+
 
 
   for I := 0 to NumFiles -1 do
@@ -284,8 +292,12 @@ begin
 
     if fBundle.ReadDWord <> 827611168 then //' XT1'
     begin
-      Log(' XT1 header missing at ' + inttostr( fBundle.Position - 4) );
-      Log('i here is ' + inttostr(i));
+      Log(' XT1 header missing at ' + inttostr( fBundle.Position - 4) + ' this must be one of the new weird ppf files - exiting.' );
+      exit;
+      //Log('i here is ' + inttostr(i));
+      //FileObject.Free;
+      //fBundle.seek(2, sofromcurrent);
+      //continue;
 
       {//Out by 10 bytes?
       fBundle.Seek(6, soFromCurrent);
@@ -319,14 +331,16 @@ begin
     AnimTextureID     := fBundle.ReadWord; //Used only if animated DDS
     fBundle.Seek(10,  soFromCurrent); //??
 
-    if (Unknown2 = 0) and (TextureID = 0) then
+    if (Unknown2 = 0) and (TextureID = 0) then  //Animated DDS with multiple frames of DDS images within this structure
     begin
-      Log('WARNING! Animation found in file ' + FileObject.FileName);
+      Log('Animation found in file ' + FileObject.FileName + ' only the first frame will be viewed/dumped.');
       TextureWidth:=fBundle.ReadDWord;
       TextureHeight:=fBundle.ReadDWord;
       TextureNumMipmaps:=fBundle.ReadDWord;
       fBundle.seek(16, sofromcurrent);
-      //NOW LOOK AT PARSEMULTIPLEDDS
+
+      TextureID := AnimTextureID; // Assign it the proper texture id for parsing below + so later its just treated as a normal dds
+      //TODO look at parsemultipledds in Psychonauts Explorer - have each frame as a separate file entry?
     end;
 
     //Correct the mipmaps for some texture IDs
@@ -380,7 +394,7 @@ begin
   end;
 
   NumFiles := fBundle.ReadWord;
-  Log('NUM MPAK Files ' + inttostr(numfiles));
+  //Log('NUM MPAK Files ' + inttostr(numfiles));
 
   for I := 0 to NumFiles -1 do
   begin
@@ -406,7 +420,7 @@ begin
   //Named scripts section
   fBundle.Seek(4, soFromCurrent); //4 extra bytes in newer mPPAK versions??
   NumFiles := fBundle.ReadWord;
-  Log('NUM Named Script Files ' + inttostr(numfiles));
+  //Log('NUM Named Script Files ' + inttostr(numfiles));
 
   for I := 0 to NumFiles -1 do
   begin
@@ -430,7 +444,7 @@ begin
 
   //Unnamed scripts section  - but now has names in this version! !?"?
   NumFiles := fBundle.ReadWord;
-  Log('NUM Unnamed Script Files ' + inttostr(numfiles));
+  //Log('NUM Unnamed Script Files (named in newer versions!?)' + inttostr(numfiles));
 
   for I := 0 to NumFiles -1 do
   begin

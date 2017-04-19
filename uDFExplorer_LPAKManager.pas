@@ -44,6 +44,8 @@ type
     constructor Create(ResourceFile: string); override;
     destructor Destroy; override;
     procedure ParseFiles; override;
+    procedure ParseFilesV1;
+    procedure ParseFilesFullThrottle;
     procedure SaveFile(FileNo: integer; DestDir, FileName: string); override;
     procedure SaveFileToStream(FileNo: integer; DestStream: TStream); override;
     procedure SaveFiles(DestDir: string); override;
@@ -183,6 +185,18 @@ end;
 
 procedure TLPAKManager.ParseFiles;
 var
+  version: word;
+begin
+  fBundle.Position := 6;
+  version := fBundle.readword;
+  if version >= 16320 then
+    ParseFilesFullThrottle
+  else
+    ParseFilesV1;
+end;
+
+procedure TLPAKManager.ParseFilesV1; //Pre Full Throttle
+var
   startOfFileEntries, startOfFileNames, sizeOfIndex, sizeOfFileEntries, sizeOfFileNames,
   sizeOfData: integer;
   startOfData: cardinal;
@@ -205,7 +219,6 @@ begin
     DWORD sizeOfFileNames;
     DWORD sizeOfData;
  end;
-
 	PakFileEntry	= record
     DWORD fileDataPos;          (* + startOfData *)
     DWORD fileNamePos;          (* + startOfFileNames *)
@@ -253,6 +266,105 @@ begin
     //Get filename from filenames table
     //In MI2SE - nameOffs is broken - so just ignore it - luckily filenames are stored
     //in the same order as the entries in the file records
+    fBundle.Position    := startOfFileNames + currNameOffset;
+    FileName := PChar(fBundle.ReadString(255));
+    inc(currNameOffset, length(FileName) + 1); //+1 because each filename is null terminated
+    FileObject.FileName := FileName;
+
+    //Correct the file extension
+    FileExt := ExtractFileExt(FileName); //Dont want the . on the file extension
+    if (length(FileExt)>0) and (FileExt[1]='.') then
+      delete(FileExt,1,1);
+
+    FileObject.FileExtension := FileExt;
+
+
+    //Correct the file type
+    FileType := GetFileTypeFromFileExtension( FileExt, Uppercase(ExtractFileExt(Filename)));
+    //if (FileType = ft_Unknown) and (ExtractFileExt(FileName) <> '') then
+    //  Log('Unknown file type ' + FileExt);
+
+    FileObject.FileType := FileType;
+
+    BundleFiles.Add(FileObject);
+  end;
+
+
+  if (Assigned(FOnDoneLoading)) then
+	  FOnDoneLoading(numFiles);
+end;
+
+procedure TLPAKManager.ParseFilesFullThrottle;
+var
+  startOfFileEntries, startOfFileNames, sizeOfIndex, sizeOfFileEntries, sizeOfFileNames,
+  sizeOfData: integer;
+  startOfData: cardinal;
+  numFiles, i, currNameOffset: integer;
+  FileExt, FileName: string;
+  FileObject: TDFFile;
+  FileType: TFileType;
+const
+  sizeOfFileRecord: integer = 24; //4 bytes bigger than previously
+begin
+{
+  Tweaked format - file records are now where index entries were, file record size larger and size field moved
+
+  header
+  file records    6 dwords per file
+  Index entries	  1 dword per file
+  File names
+  File data
+
+
+  Header:
+  4	KAPL
+  4	Version? BE?
+  4	startOfFileEntries
+  4	startOfIndex
+  4	startOfFileNames
+  4	startOfData
+  4	sizeOfIndex
+  4	sizeOfFileEntries
+  4	sizeOfFileNames
+  4	sizeOfData
+  8	unknown
+  }
+
+ if fBigEndian then  //All LE reading auto converted to BE
+    Log('Detected as : big endian');
+
+
+  //Read header
+  fBundle.Position := 8;
+  startOfFileEntries := fBundle.ReadDWord;
+  fBundle.Seek(4, soFromCurrent); //Past startOfIndex
+  startOfFileNames   := fBundle.ReadDWord;
+  startOfData        := fBundle.ReadDWord;
+  sizeOfIndex        := fBundle.ReadDWord;
+  sizeOfFileEntries  := fBundle.ReadDWord;
+  sizeOfFileNames    := fBundle.ReadDWord;
+  sizeOfData         := fBundle.ReadDWord;
+
+  numFiles :=  sizeOfFileEntries div sizeOfFileRecord;
+
+  currNameOffset := 0;
+
+  //Parse files
+  for I := 0 to numFiles - 1 do
+  begin
+    fBundle.Position  := startOfFileEntries + (sizeOfFileRecord * i);
+    FileObject        := TDFFile.Create;
+    FileObject.Offset := fBundle.ReadDWord + startOfData;
+    fBundle.Seek(8, soFromCurrent); //Past nameOffs and 4 bytes that was size in old format
+    FileObject.Size   := fBundle.ReadDWord;
+    if fBundle.ReadDWord <> FileObject.Size then //If size and 'compressed size' differ
+    begin
+      Log('Compressed file found in file ' +  inttostr(i) + ' at offset ' +
+        inttostr(FileObject.Offset) + ' hurry up and add support for this!');
+      FileObject.Compressed := true;
+    end;
+
+    //Get filename from filenames table
     fBundle.Position    := startOfFileNames + currNameOffset;
     FileName := PChar(fBundle.ReadString(255));
     inc(currNameOffset, length(FileName) + 1); //+1 because each filename is null terminated
