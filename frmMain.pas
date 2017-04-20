@@ -28,6 +28,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Menus, ImgList, Buttons, ExtCtrls, IniFiles, System.UITypes,
+  System.ImageList, 
+  
   JvBaseDlg, JvBrowseFolder, JvExStdCtrls, JvRichEdit, JvEdit, JvExControls,
   JvTracker, JvExExtCtrls, JvExtComponent, JvSplit, JvAnimatedImage, JvGIFCtrl,
 
@@ -37,8 +39,7 @@ uses
 
   JCLSysInfo, JCLStrings, JCLShell, JCLFileUtils, bass,
 
-  uDFExplorer_Const, uDFExplorer_Base, uDFExplorer_Types, uDFExplorer_Funcs,
-  System.ImageList;
+  uDFExplorer_Const, uDFExplorer_Base, uDFExplorer_Types, uDFExplorer_Funcs;
 
 type
   TformMain = class(TForm)
@@ -156,6 +157,7 @@ type
     function CaptureConsoleOutput(const ACommand, AParameters: String): ansistring;
     function DecompileLuaToString(FileNo: cardinal): string;
     function SaveFolderDialog(DialogTitle: string = 'Choose a folder'): string;
+    function BundleContainsOneOfFileType(FileType: TFileType): boolean;
     procedure OnDoneLoading(Count: integer);
     procedure DoLog(Text: string);
     procedure FreeResources;
@@ -636,7 +638,23 @@ begin
   end;
 end;
 
+function TformMain.BundleContainsOneOfFileType(FileType: TFileType): boolean;
+var
+  i: integer;
+begin
+  result := false;
 
+ if Tree.RootNodeCount = 0 then exit;
+
+  for i:=0 to Tree.RootNodeCount -1 do
+  begin
+    if fExplorer.FileType[i] = FileType then
+    begin
+      result := true;
+      exit;
+    end;
+  end;
+end;
 
 
 
@@ -1329,7 +1347,8 @@ begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
 
-  if fExplorer.FileExtension[Tree.focusednode.Index] = 'MP3' then
+  if (fExplorer.FileExtension[Tree.focusednode.Index] = 'MP3') or
+    (Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'OGV') then
   begin
     SaveDialog1.Filter:='MP3 files|*.mp3';
     SaveDialog1.DefaultExt:='.mp3';
@@ -1348,7 +1367,7 @@ begin
   end;
 
 
-  SaveDialog1.FileName:=ChangeFileExt(fExplorer.FileName[Tree.focusednode.Index], '' );
+  SaveDialog1.FileName:=ChangeFileExt( ExtractFileName( fExplorer.FileName[Tree.focusednode.Index] ), '' );
   if SaveDialog1.Execute = false then exit;
 
   DecodeResult:=false;
@@ -1388,6 +1407,7 @@ begin
 
 end;
 
+
 procedure TformMain.menuItemSaveAllAudioClick(Sender: TObject);
 var
   TempNode: pVirtualNode;
@@ -1415,8 +1435,15 @@ begin
       end;
 
       if fExplorer.FileType[TempNode.Index] = ft_Audio then
-        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir),
-          fExplorer.FileName[TempNode.Index])
+      begin
+        ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
+
+        //Need to change extension on ogv from Full Throttle
+        if Uppercase(fExplorer.FileExtension[TempNode.Index]) = 'OGV' then
+          fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.mp3'))
+        else
+          fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index])
+      end
       else
       if fExplorer.FileType[TempNode.Index] = ft_IMCAudio then
       begin
@@ -1436,9 +1463,16 @@ begin
         end;
       end;
 
+
       Application.ProcessMessages;
       TempNode:=Tree.GetNext(TempNode);
     end;
+
+    //Warn than FSB music inside an FSB bundle wont be dumped by this method.
+    //Dont show message if we are already inside an FSB resource file
+    if UpperCase(ExtractFileExt(OpenDialog1.FileName)) <> '.FSB' then
+      if BundleContainsOneOfFileType(ft_FSBFile) then
+        DoLog('WARNING this bundle contains FSB audio files. They HAVENT been saved. To save them you need to double click on each FSB file - a new window will open and you can then click "save all audio" again.');
 
   finally
     EnableDisableButtonsGlobal(true);

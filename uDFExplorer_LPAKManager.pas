@@ -380,6 +380,8 @@ begin
 
     //Correct the file type
     FileType := GetFileTypeFromFileExtension( FileExt, Uppercase(ExtractFileExt(Filename)));
+
+
     //if (FileType = ft_Unknown) and (ExtractFileExt(FileName) <> '') then
     //  Log('Unknown file type ' + FileExt);
 

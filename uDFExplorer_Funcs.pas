@@ -19,8 +19,7 @@ uses
   Sysutils, Windows, JCLRegistry, uDFExplorer_Types, uMemReader, Classes, StrUtils,
   JCLStrings, ImagingTypes, ImagingUtility;
 
-  function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''):
-    TFileType;
+  function GetFileTypeFromFileExtension(FileExt: string; ActualFileExt: string = ''): TFileType;
   function GetCavePath: string;
   function GetStackingPath: string;
   function GetIronBrigadePath: string;
@@ -577,6 +576,28 @@ begin
   {Full Throttle fypes}
   else
   if FileExt = 'wav' then result:= ft_Audio //Cant remember why this function is case sensitive instead of everything being uppercased. Perhaps it helps distinguish between some games?
+  else
+  if FileExt = 'ogv' then result:= ft_Audio
+  else
+  if FileExt = 'SAN' then result:= ft_Other
+  else
+  if FileExt = 'chnk' then result:= ft_Other
+  else
+  if FileExt = 'TRS' then result:= ft_Other
+  else
+  if FileExt = 'NUT' then result:= ft_Other
+  else
+  if FileExt = 'FLU' then result:= ft_Other
+  else
+  if FileExt = 'RIP' then result:= ft_Other
+  else
+  if FileExt = 'LBM' then result:= ft_Other
+  else
+  if FileExt = 'la0' then result:= ft_Other
+  else
+  if FileExt = 'la1' then result:= ft_Other
+  else
+  if FileExt = 'FLC' then result:= ft_Other
 
   else
   begin
