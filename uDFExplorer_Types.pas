@@ -59,7 +59,7 @@ type
     FileName: string;
     UncompressedSize: integer;
     NameOffset: integer;
-    Offset:   LongWord; //Make it unsigned int - DOTT has big uint offsets
+    Offset:   int64; //Make it 64 bit int - DOTT has big uint offsets and then DOTT has 64 bit offsets
     Size:     integer;
     FileTypeIndex: integer;
     CompressionType: integer;

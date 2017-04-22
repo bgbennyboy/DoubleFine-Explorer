@@ -32,7 +32,7 @@ type
     function GetFilesCount: integer; Virtual; Abstract;
     function GetFileName(Index: integer): string; Virtual; Abstract;
     function GetFileSize(Index: integer): integer; Virtual; Abstract;
-    function GetFileOffset(Index: integer): LongWord; Virtual; Abstract;
+    function GetFileOffset(Index: integer): int64; Virtual; Abstract;
     function GetFileExtension(Index: integer): string; Virtual; Abstract;
     function GetFileType(Index: integer): TFiletype; Virtual; Abstract;
     procedure Log(Text: string); Virtual; Abstract;
@@ -50,7 +50,7 @@ type
     property OnDebug: TDebugEvent read FOnDebug write FOnDebug;
     property FileName[Index: integer]: string read GetFileName;
     property FileSize[Index: integer]: integer read GetFileSize;
-    property FileOffset[Index: integer]: LongWord read GetFileOffset;
+    property FileOffset[Index: integer]: int64 read GetFileOffset;
     property FileExtension[Index: integer]: string read GetFileExtension;
     property FileType[Index: integer]: TFileType read GetFileType;
     property BigEndian: boolean read fBigEndian;

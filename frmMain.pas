@@ -1366,8 +1366,7 @@ begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
 
-  if (fExplorer.FileExtension[Tree.focusednode.Index] = 'MP3') or
-    (Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'OGV') then
+  if (fExplorer.FileExtension[Tree.focusednode.Index] = 'MP3') then
   begin
     SaveDialog1.Filter:='MP3 files|*.mp3';
     SaveDialog1.DefaultExt:='.mp3';
@@ -1457,11 +1456,7 @@ begin
       begin
         ForceDirectories(extractfilepath(IncludeTrailingPathDelimiter(Dir) + ExtractPartialPath( fExplorer.FileName[TempNode.Index])));
 
-        //Need to change extension on ogv from Full Throttle
-        if Uppercase(fExplorer.FileExtension[TempNode.Index]) = 'OGV' then
-          fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), ChangeFileExt(fExplorer.FileName[TempNode.Index], '.mp3'))
-        else
-          fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index])
+        fExplorer.SaveFile(TempNode.Index, IncludeTrailingPathDelimiter(Dir), fExplorer.FileName[TempNode.Index])
       end
       else
       if fExplorer.FileType[TempNode.Index] = ft_IMCAudio then

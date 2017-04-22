@@ -35,7 +35,7 @@ type
     function GetFilesCount: integer; override;
     function GetFileName(Index: integer): string; override;
     function GetFileSize(Index: integer): integer; override;
-    function GetFileOffset(Index: integer): LongWord; override;
+    function GetFileOffset(Index: integer): int64; override;
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     procedure Log(Text: string); override;
@@ -52,7 +52,7 @@ type
     property Count: integer read GetFilesCount;
     property FileName[Index: integer]: string read GetFileName;
     property FileSize[Index: integer]: integer read GetFileSize;
-    property FileOffset[Index: integer]: LongWord read GetFileOffset;
+    property FileOffset[Index: integer]: int64 read GetFileOffset;
     property FileType[Index: integer]: TFileType read GetFileType;
     property FileExtension[Index: integer]: string read GetFileExtension;
     property BigEndian: boolean read fBigEndian;
@@ -138,7 +138,7 @@ begin
      result:=TDFFile(BundleFiles.Items[Index]).FileName;
 end;
 
-function TLPAKManager.GetFileOffset(Index: integer): LongWord;
+function TLPAKManager.GetFileOffset(Index: integer): int64;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
@@ -307,7 +307,7 @@ const
   sizeOfFileRecord: integer = 24; //4 bytes bigger than previously
 begin
 {
-  Tweaked format - file records are now where index entries were, file record size larger and size field moved
+  Tweaked format - file records are now where index entries were, file record size larger and size field is 8 bytes
 
   header
   file records    6 dwords per file
@@ -354,8 +354,9 @@ begin
   begin
     fBundle.Position  := startOfFileEntries + (sizeOfFileRecord * i);
     FileObject        := TDFFile.Create;
-    FileObject.Offset := fBundle.ReadDWord + startOfData;
-    fBundle.Seek(8, soFromCurrent); //Past nameOffs and 4 bytes that was size in old format
+    FileObject.Offset := fBundle.ReadQWord + startOfData;
+
+    fBundle.Seek(4, soFromCurrent); //Past nameOffs
     FileObject.Size   := fBundle.ReadDWord;
     if fBundle.ReadDWord <> FileObject.Size then //If size and 'compressed size' differ
     begin
@@ -376,7 +377,6 @@ begin
       delete(FileExt,1,1);
 
     FileObject.FileExtension := FileExt;
-
 
     //Correct the file type
     FileType := GetFileTypeFromFileExtension( FileExt, Uppercase(ExtractFileExt(Filename)));

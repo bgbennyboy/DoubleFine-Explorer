@@ -577,7 +577,7 @@ begin
   else
   if FileExt = 'wav' then result:= ft_Audio //Cant remember why this function is case sensitive instead of everything being uppercased. Perhaps it helps distinguish between some games?
   else
-  if FileExt = 'ogv' then result:= ft_Audio
+  if FileExt = 'ogv' then result:= ft_Other
   else
   if FileExt = 'SAN' then result:= ft_Other
   else

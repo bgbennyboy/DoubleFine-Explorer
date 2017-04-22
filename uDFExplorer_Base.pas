@@ -35,7 +35,7 @@ private
   fBundleFilename: string;
   function GetFileName(Index: integer): string;
   function GetFileSize(Index: integer): integer;
-  function GetFileOffset(Index: integer): LongWord;
+  function GetFileOffset(Index: integer): int64;
   function GetFileType(Index: integer): TFiletype;
   function GetFileExtension(Index: integer): string;
   function DrawImage(MemStream: TMemoryStream; OutImage: TBitmap32): boolean;
@@ -72,7 +72,7 @@ public
   property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
   property FileName[Index: integer]: string read GetFileName;
   property FileSize[Index: integer]: integer read GetFileSize;
-  property FileOffset[Index: integer]: LongWord read GetFileOffset;
+  property FileOffset[Index: integer]: int64 read GetFileOffset;
   property FileType[Index: integer]: TFileType read GetFileType;
   property FileExtension[Index: integer]: string read GetFileExtension;
 end;
@@ -1044,7 +1044,7 @@ begin
   result:=fBundle.FileName[Index];
 end;
 
-function TDFExplorerBase.GetFileOffset(Index: integer): LongWord;
+function TDFExplorerBase.GetFileOffset(Index: integer): int64;
 begin
   result:=fBundle.FileOffset[Index];
 end;

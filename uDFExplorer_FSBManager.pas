@@ -31,7 +31,7 @@ type
     function GetFilesCount: integer; override;
     function GetFileName(Index: integer): string; override;
     function GetFileSize(Index: integer): integer;  override;
-    function GetFileOffset(Index: integer): LongWord; override;
+    function GetFileOffset(Index: integer): int64; override;
     function DecryptFSB(InStream: TStream; Offset, Size: integer; OutStream: TStream;
       Key: Array of byte; KeyOffset: integer = -1): boolean;
     function GetFileType(Index: integer): TFiletype; override;
@@ -53,7 +53,7 @@ type
     property Count: integer read GetFilesCount;
     property FileName[Index: integer]: string read GetFileName;
     property FileSize[Index: integer]: integer read GetFileSize;
-    property FileOffset[Index: integer]: LongWord read GetFileOffset;
+    property FileOffset[Index: integer]: int64 read GetFileOffset;
     property FileType[Index: integer]: TFileType read GetFileType;
     property FileExtension[Index: integer]: string read GetFileExtension;
   end;
@@ -235,7 +235,7 @@ begin
      result:=TFSBFile(BundleFiles.Items[Index]).FileName;
 end;
 
-function TFSBManager.GetFileOffset(Index: integer): LongWord;
+function TFSBManager.GetFileOffset(Index: integer): int64;
 begin
   if (not assigned(BundleFiles)) or
      (index < 0) or
