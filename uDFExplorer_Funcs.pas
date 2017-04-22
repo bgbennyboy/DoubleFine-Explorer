@@ -581,9 +581,9 @@ begin
   else
   if FileExt = 'SAN' then result:= ft_Other
   else
-  if FileExt = 'chnk' then result:= ft_Other
+  if FileExt = 'chnk' then result:= ft_FTHeaderlessCHNKImage
   else
-  if FileExt = 'TRS' then result:= ft_Other
+  if FileExt = 'TRS' then result:= ft_Text
   else
   if FileExt = 'NUT' then result:= ft_Other
   else

@@ -47,6 +47,7 @@ private
     DestStream: TStream): boolean;
   function WriteHeaderlessDOTT_DDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessDOTT_DDS_CostumeToStream(SourceStream, DestStream: TStream): boolean;
+  function WriteHeaderlessFT_chnk_DDSToStream(SourceStream, DestStream: TStream): boolean;
   procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE;
     DestStream: TStream; IsCubemap: boolean = false);
 public
@@ -362,7 +363,7 @@ begin
   x bytes Gzipped texture
 
   Texture isn't DXT -
-    For FXT1 its 8bpp greyscale or RGB233 (unsure which probably greyscale as its fonts)
+    For FXT1 its 8bpp greyscale or RGB233 (unsure which, probably greyscale as its fonts)
     For FXT2 its 16bpp
 }
   Result := false;
@@ -460,6 +461,8 @@ begin
             WriteHeaderlessDOTT_DDSToStream(TempStream, DDSStream);
         DDS_HEADERLESS_DOTT_COSTUME: DecodeResult :=
             WriteHeaderlessDOTT_DDS_CostumeToStream(TempStream, DDSStream);
+        DDS_HEADERLESS_FT_CHNK:      DecodeResult :=
+            WriteHeaderlessFT_chnk_DDSToStream(TempStream, DDSStream);
       end;
 
       if DecodeResult = false then
@@ -560,7 +563,7 @@ begin
 
   Sourcestream.Seek(4, soFromCurrent); //Unknown - mipmaps maybe?
 
-  //Check if gzipped DOTT always has gzipped dxt files after the 16 byte header
+  //Check if gzipped. DOTT always has gzipped dxt files after the 16 byte header
   SourceStream.Read(Temp, 2);
   SourceStream.Seek(-2, soFromCurrent);
   if Temp = 35615 {1F8B} then
@@ -660,6 +663,67 @@ begin
   finally
     TempStreamJustMXT5.Free;
   end;
+end;
+
+function TDFExplorerBase.WriteHeaderlessFT_chnk_DDSToStream(SourceStream,
+  DestStream: TStream): boolean;
+var
+  HeaderIndex, Width, Height, Datasize: integer;
+  TempStream: TMemoryStream;
+begin
+  result := false;
+
+  if SourceStream.Size < 12 then
+  begin
+    Log('No DDS image in this chunk - its too small');
+    exit;
+  end;
+
+
+  SourceStream.Position:=0;
+
+  //Find the DXT1 or DXT5 header
+  HeaderIndex := FindFileHeader(SourceStream, 0, SourceStream.Size, 'DXT5');
+  if HeaderIndex = -1 then
+  begin
+    HeaderIndex := FindFileHeader(SourceStream, 0, SourceStream.Size, 'DXT1');
+    if HeaderIndex = -1 then
+    begin
+      Exit;
+    end;
+  end;
+
+
+  Sourcestream.Position := HeaderIndex + 4;
+  SourceStream.Read(Width, 4);
+  SourceStream.Read(Height, 4);
+
+  begin
+    //Sourcestream.Position := HeaderIndex + 12; //start of compressed data
+    TempStream := tmemorystream.Create;
+    try
+      TempStream.CopyFrom(SourceStream, SourceStream.Size - Sourcestream.Position);
+      Tempstream.Position := 0;
+      SourceStream.Size := 0;
+      ZDecompressStream2(tempstream, sourcestream, -15);
+    finally
+      TempStream.Free;
+    end;
+  end;
+
+  Datasize := Width * Height;  //The header on the dxt files is only 16 bytes long
+
+  //Tempstream.Position := 0;
+  //SourceStream.Position := 0;
+  //TempStream.CopyFrom(SourceStream, SourceStream.Size);
+  //TempStream.SaveToFile('c:\users\ben\desktop\testfile');
+
+
+  AddDDSHeaderToStream(Width, Height, Datasize, DXT5, DestStream, false);
+  SourceStream.Position :=  0;
+  DestStream.CopyFrom(SourceStream, SourceStream.Size);
+  DestStream.Position := 0;
+  result := true;
 end;
 
 function TDFExplorerBase.WriteHeaderlessTexDDSToStream(SourceStream,
@@ -1047,6 +1111,8 @@ begin
           Result := WriteHeaderlessDOTT_DDSToStream(Tempstream, SaveFile);
         DDS_HEADERLESS_DOTT_COSTUME:
           Result := WriteHeaderlessDOTT_DDS_CostumeToStream(Tempstream, SaveFile);
+        DDS_HEADERLESS_FT_CHNK:
+          Result := WriteHeaderlessFT_chnk_DDSToStream(TempStream, SaveFile);
       end;
     finally
       SaveFile.Free;

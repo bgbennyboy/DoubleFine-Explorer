@@ -32,6 +32,7 @@ type
     ft_HeaderlessDOTTDDSImage,
     ft_DOTTFontImage,
     ft_DOTTXMLCostumeWithImage,
+    ft_FTHeaderlessCHNKImage,
     ft_Text,
     ft_CSVText,
     ft_DelimitedText,
@@ -73,7 +74,8 @@ type
     DDS_HEADERLESS,
     DDS_HEADERLESS_PSYCHONAUTS,
     DDS_HEADERLESS_DOTT,
-    DDS_HEADERLESS_DOTT_COSTUME
+    DDS_HEADERLESS_DOTT_COSTUME,
+    DDS_HEADERLESS_FT_CHNK
   );
 
   TDXTTYPE = (
