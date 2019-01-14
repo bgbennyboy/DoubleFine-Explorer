@@ -441,6 +441,7 @@ var
   DecodeResult: Boolean;
 begin
   Result:=false;
+  DecodeResult := false;
 
   TempStream:=TExplorerMemoryStream.Create;
   try
@@ -643,7 +644,7 @@ begin
   HeaderIndex := FindFileHeader(SourceStream, 0, SourceStream.Size, 'MXT5');
   if HeaderIndex = -1 then
   begin
-    Log('XML doesnt contain costume image (not all of them do)');
+    Log('XML doesnt contain costume image (not all of them do). In Full Throttle none of them do!');
     Exit;
   end;
 
@@ -670,6 +671,7 @@ function TDFExplorerBase.WriteHeaderlessFT_chnk_DDSToStream(SourceStream,
 var
   HeaderIndex, Width, Height, Datasize: integer;
   TempStream: TMemoryStream;
+  DXT: TDXTTYPE;
 begin
   result := false;
 
@@ -684,9 +686,11 @@ begin
 
   //Find the DXT1 or DXT5 header
   HeaderIndex := FindFileHeader(SourceStream, 0, SourceStream.Size, 'DXT5');
+  DXT := DXT5;
   if HeaderIndex = -1 then
   begin
     HeaderIndex := FindFileHeader(SourceStream, 0, SourceStream.Size, 'DXT1');
+    DXT := DXT1;
     if HeaderIndex = -1 then
     begin
       Exit;
@@ -719,7 +723,7 @@ begin
   //TempStream.SaveToFile('c:\users\ben\desktop\testfile');
 
 
-  AddDDSHeaderToStream(Width, Height, Datasize, DXT5, DestStream, false);
+  AddDDSHeaderToStream(Width, Height, Datasize, DXT, DestStream, false);
   SourceStream.Position :=  0;
   DestStream.CopyFrom(SourceStream, SourceStream.Size);
   DestStream.Position := 0;
