@@ -13320,8 +13320,8 @@ object formMain: TformMain
   end
   object OpenDialog1: TOpenDialog
     Filter = 
-      'H, FSB, PKG, PCK, PPF, LAB, CLE, DATA Files|*.~h;*.FSB;*.PCK;*.P' +
-      'KG;*.PPF;*.LAB;*.CLE;*.DATA|All Files|*'
+      'All supported filetypes|*.~h;*.FSB;*.PCK;*.PKG;*.PPF;*.LAB;*.CLE' +
+      ';*.DATA|All Files|*'
     Left = 48
     Top = 264
   end

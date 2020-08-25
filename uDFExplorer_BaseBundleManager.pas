@@ -57,8 +57,8 @@ type
   end;
 
 const
-    strErrFileSize:   string  = 'File size  <=0! Save cancelled.';
-    strErrFileNo:     string  = 'Invalid file number! Save cancelled.';
+    strErrFileSize:   string  = 'File size  <=0 Save cancelled for this file.';
+    strErrFileNo:     string  = 'Invalid file number! Save cancelled for this file.';
     strSavingFile:    string  = 'Saving file ';
 
 implementation

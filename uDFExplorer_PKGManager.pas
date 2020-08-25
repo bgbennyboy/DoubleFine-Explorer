@@ -184,11 +184,14 @@ end;
 
 procedure TPKGManager.ParsePKGBundle;
 var
-  NumFiles, SecondDirOffset, NameDirOffset, FileExtDirOffset,
-  FileExtensionOffset, FilenameOffset, i, OldPosition: integer;
+  NumFiles, NumDirs, FolderDirOffset, NameDirOffset, FileExtDirOffset,
+  FileExtensionOffset, FilenameOffset, i, j, OldPosition, ReturnPos1,
+  ReturnPos2, StartIndex, EndIndex, ThisID: integer;
   FileObject: TDFFile;
-  TempName, Prevname: string;
-  Unknown1, Unknown2, RecordID, StartIndex, EndIndex: integer;
+  CurrName: string;
+  Letter: char;
+  ReturnNames, PathNames: TStringList;
+  ReturnIDs, PathIDsStart, PathIDsEnd: array of integer;
 begin
   fBundle.Position:=0;
   if fBundle.ReadBlockName <> 'ZPKG' then
@@ -200,15 +203,15 @@ begin
   fBundle.seek(4, sofromcurrent); //version
   fBundle.seek(4, sofromcurrent); //first file offset
   NumFiles := fBundle.readdword;     //number of files
-  SecondDirOffset := fBundle.readdword;  //offset of second directory structure
-  fBundle.seek(4, sofromcurrent); //number of records in second directory
+  FolderDirOffset := fBundle.readdword;  //offset of folder directory
+  NumDirs := fBundle.readdword; //number of records in folder directory
   NameDirOffset := fBundle.readdword;  //name dir offset
   FileExtDirOffset := fBundle.readdword;  //file extension dir offset
 
   //Parse File Records
   fBundle.Position := 512;
 
-  for I := 0 to NumFiles do
+  for I := 0 to NumFiles -1 do
   begin
     fBundle.seek(1, sofromcurrent); //null
     FileExtensionOffset := fBundle.ReadWord; //offset in file ext dir
@@ -230,7 +233,7 @@ begin
 
 
     fBundle.Position := FilenameOffset + NameDirOffset;
-    FileObject.FileName := PChar(fBundle.ReadString(100));
+    FileObject.FileName := PChar(fBundle.ReadString(100)) + FileObject.FileExtension;
 
     //Correct the file type
     FileObject.FileType := GetFileTypeFromFileExtension( FileObject.FileExtension);
@@ -245,32 +248,85 @@ begin
     BundleFiles.Add(FileObject);
   end;
 
-  //Directory names are broken so just ignore them
-  {fBundle.Position:=SecondDirOffset;
-  while fBundle.Position < NameDirOffset do
-  begin
-    TempName := TempName + chr(fBundle.ReadByte);
-    if TempName='/' then TempName:=PrevName + '/';
+  //Now parse the folder Dir. Its 12 bytes per record
+  //Algorithm by Watto https://github.com/bgbennyboy/DoubleFine-Explorer/issues/4
+  fBundle.Position := FolderDirOffset;
+  SetLength(ReturnIDs, NumDirs);
+  CurrName := '';
 
-    fBundle.Seek(1, SoFromCurrent); //null
-    Unknown1:=fBundle.ReadWord;  //1 and 2 = if not nil = index of the end of this dir name? Eg 'sayline heads' starts on entry 257 in the dir table, Unknown1=269 and sayline heads is complete on entry 269 in the dir table.
-    Unknown2:=fBundle.ReadWord;  //But..not always!?!?!?
-    RecordID:=fBundle.ReadWord;
-    StartIndex:=fBundle.ReadWord;
-    EndIndex:=fBundle.ReadWord;
-
-    Log('Unknown1: ' + inttostr(Unknown1) + ' Unknown2: ' + inttostr(Unknown2) + ' Start: ' + inttostr(StartIndex) + '  End: ' + inttostr(EndIndex) + ' ' + TempName);
-    if (Startindex <> 0) or (EndIndex <> 0) then
+  ReturnNames := TStringList.Create;
+  PathNames := TStringList.Create;
+  try
+    for i := 0 to NumDirs -1 do
     begin
-      for I := Startindex to EndIndex -1 do
-        TDFFile(BundleFiles[i]).FileName := TempName + '/' + TDFFile(BundleFiles[i]).FileName;
+      Letter := chr(fBundle.ReadByte); //One letter of a dir string
+      fBundle.Seek(1, soFromCurrent);  //Null byte after the letter
 
-      PrevName:=TempName;
-      TempName:='';
+      ReturnPos1 := fBundle.ReadWord;
+      if ReturnPos1 <> 0 then
+      begin
+        ReturnNames.Add(CurrName);
+        ReturnIDs[ ReturnNames.Count -1 ] := returnPos1;
+      end;
+
+      ReturnPos2 := fBundle.ReadWord;
+      if ReturnPos2 <> 0 then
+      begin
+        ReturnNames.Add(CurrName);
+        ReturnIDs[ ReturnNames.Count -1 ] := returnPos2;
+      end;
+
+      CurrName := CurrName + Letter;  //CurrName contains the dir string we are building
+      fBundle.Seek(2, soFromCurrent); //2 bytes - Character ID (incremental from 1)
+      StartIndex := fBundle.ReadWord; //2 bytes - First File ID in this Folder
+      EndIndex := fBundle.ReadWord;   //2 bytes- Last File ID in this Folder
+
+      if (StartIndex <> 0) and (EndIndex <> 0) then
+      begin
+        PathNames.Add(CurrName);
+        SetLength(PathIDsStart, PathNames.Count); //messy way of doing this - todo have array of records instead
+        SetLength(PathIDsEnd, PathNames.Count);
+        PathIDsStart[PathNames.Count-1] := StartIndex;
+        PathIDsEnd[PathNames.Count-1] := EndIndex;
+      end;
+
+      //Process the returns now
+      ThisID := i + 1;
+      for j := 0 to  ReturnNames.Count -1 do
+      begin
+        if ReturnIDs[j] = thisID then //Found one
+        begin
+          currName := ReturnNames.Strings[j];
+
+          //Shuffle the return arrays to remove this entry
+          if j <>  ReturnNames.Count -1 then
+          begin
+            returnIDs[j] := returnIDs[ ReturnNames.Count -1];
+            returnNames[j] := returnNames[ ReturnNames.Count -1];
+          end;
+        end;
+      end;
     end;
 
-  end;}
+    //Sanitise the directory strings
+    for i := 0 to pathNames.Count -1 do
+    begin
+      PathNames[i] := IncludeTrailingPathDelimiter(PathNames[i]);
+      PathNames[i] := StringReplace(PathNames[i], '/', '\', [rfReplaceAll])
+    end;
 
+    //Match the dir string to each file
+    for i := 0 to PathNames.Count -1 do
+    begin
+      //Get each folder string, then loop through the path IDs associated with it and append the dir to each name
+      for j := PathIDsStart[i]-1 to PathIDsEnd[i]-1 do //-1 because pathids start from 1 and our list starts from 0
+        TDFFile(BundleFiles[j]).FileName := pathNames[i] + TDFFile(BundleFiles[j]).FileName;
+    end;
+
+  finally
+    ReturnNames.Free;
+    PathNames.Free;
+  end;
 
   if (Assigned(FOnDoneLoading)) then
 	  FOnDoneLoading(NumFiles);
@@ -282,7 +338,7 @@ var
 begin
   if TDFFile(BundleFiles.Items[FileNo]).Size <= 0 then
   begin
-    Log(strErrFileSize);
+    Log(strErrFileSize + FileName);
     exit;
   end;
 
@@ -331,7 +387,7 @@ var
 begin
   if TDFFile(BundleFiles.Items[FileNo]).Size <= 0 then
   begin
-    Log(strErrFileSize);
+    Log(strErrFileSize + TDFFile(BundleFiles.Items[FileNo]).FileName);
     exit;
   end;
 
@@ -343,7 +399,7 @@ begin
 
   Ext:=Uppercase(ExtractFileExt(TDFFile(BundleFiles.Items[FileNo]).FileName));
 
-  fBundle.Seek(TDFFile(BundleFiles.Items[FileNo]).Offset, sofrombeginning);
+  fBundle.Position := TDFFile(BundleFiles.Items[FileNo]).Offset;
 
 
   if TDFFile(BundleFiles.Items[FileNo]).Compressed then

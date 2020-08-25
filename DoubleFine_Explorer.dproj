@@ -3,7 +3,7 @@
         <ProjectGuid>{DBC1D53D-88D1-41F4-823D-5C048457E471}</ProjectGuid>
         <ProjectVersion>18.1</ProjectVersion>
         <MainSource>DoubleFine_Explorer.dpr</MainSource>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <Base>True</Base>
         <TargetedPlatforms>1</TargetedPlatforms>
