@@ -1366,13 +1366,20 @@ begin
   if Tree.RootNodeCount=0 then exit;
   if Tree.SelectedCount=0 then exit;
 
-  if (fExplorer.FileExtension[Tree.focusednode.Index] = 'MP3') then
+  if Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'MP3' then
   begin
     SaveDialog1.Filter:='MP3 files|*.mp3';
     SaveDialog1.DefaultExt:='.mp3';
   end
   else
-  if (fExplorer.FileExtension[Tree.focusednode.Index] = 'WAV') or
+  if Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'OGG' then
+  begin
+    SaveDialog1.Filter:='OGG files|*.ogg';
+    SaveDialog1.DefaultExt:='.ogg';
+  end
+  else
+  if (Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'WAV') or
+     //(Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'AIF') or
      (Uppercase(fExplorer.FileExtension[Tree.focusednode.Index]) = 'IMC') then
   begin
     SaveDialog1.Filter:='WAV files|*.wav';
@@ -1395,7 +1402,7 @@ begin
 
     if fExplorer.FileType[Tree.focusednode.Index] = ft_Audio then
       fExplorer.SaveFile(Tree.focusednode.Index, ExtractFilePath(SaveDialog1.FileName),
-        ExtractFileName(SaveDialog1.FileName))
+        ExtractFileName(SaveDialog1.FileName), false)
     else
     if fExplorer.FileType[Tree.focusednode.Index] = ft_IMCAudio then
     begin

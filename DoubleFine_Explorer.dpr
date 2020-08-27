@@ -33,7 +33,8 @@ uses
   uDFExplorer_PKGManager in 'uDFExplorer_PKGManager.pas',
   uDFExplorer_LABManager in 'uDFExplorer_LABManager.pas',
   uVimaDecode in 'uVimaDecode.pas',
-  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas';
+  uDFExplorer_PCKManager in 'uDFExplorer_PCKManager.pas',
+  uDFExplorer_ISBManager in 'uDFExplorer_ISBManager.pas';
 
 {$R *.res}
 

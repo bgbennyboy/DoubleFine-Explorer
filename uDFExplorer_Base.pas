@@ -23,7 +23,7 @@ uses
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
   uDFExplorer_PKGManager, uDFExplorer_PPAKManager, uDFExplorer_LABManager,
-  uDFExplorer_LPAKManager, uVimaDecode;
+  uDFExplorer_LPAKManager, uDFExplorer_ISBManager, uVimaDecode;
 
 type
   TDFExplorerBase = class
@@ -106,6 +106,9 @@ begin
     else
     if Uppercase( ExtractFileExt(BundleFile) ) = '.DATA' then
       fBundle:=TLPAKManager.Create(BundleFile)
+    else
+    if Uppercase( ExtractFileExt(BundleFile) ) = '.ISB' then
+      fBundle:=TISBManager.Create(BundleFile)
     else
       fBundle:=TPAKManager.Create(BundleFile);
   except on E: EInvalidFile do

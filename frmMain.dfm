@@ -13321,7 +13321,7 @@ object formMain: TformMain
   object OpenDialog1: TOpenDialog
     Filter = 
       'All supported filetypes|*.~h;*.FSB;*.PCK;*.PKG;*.PPF;*.LAB;*.CLE' +
-      ';*.DATA|All Files|*'
+      ';*.DATA;*.ISB|All Files|*'
     Left = 48
     Top = 264
   end
