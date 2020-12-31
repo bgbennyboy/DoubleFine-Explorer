@@ -25,7 +25,7 @@ object formMain: TformMain
     Height = 55
     Align = alTop
     BevelOuter = bvNone
-    TabOrder = 0
+    TabOrder = 1
     DesignSize = (
       862
       55)
@@ -298,7 +298,7 @@ object formMain: TformMain
         81BCBD01090EFF0F487411F68615472E0000000049454E44AE426082}
       Rounded = False
       Transparent = True
-      TabOrder = 0
+      TabOrder = 4
       OnClick = btnAboutClick
       Appearance.BorderColor = 15000546
       Appearance.BorderColorHot = 16371364
@@ -824,7 +824,7 @@ object formMain: TformMain
         AE426082}
       Rounded = False
       Transparent = True
-      TabOrder = 2
+      TabOrder = 3
       OnClick = btnSaveAllFilesClick
       Appearance.BorderColor = 15000546
       Appearance.BorderColorHot = 16371364
@@ -959,7 +959,7 @@ object formMain: TformMain
         5F98F58CCF0A94A00000000049454E44AE426082}
       Rounded = False
       Transparent = True
-      TabOrder = 3
+      TabOrder = 2
       OnClick = btnSaveFileClick
       Appearance.BorderColor = 15000546
       Appearance.BorderColorHot = 16371364
@@ -1437,7 +1437,7 @@ object formMain: TformMain
         0000000049454E44AE426082}
       Rounded = False
       Transparent = True
-      TabOrder = 4
+      TabOrder = 0
       Appearance.BorderColor = 15000546
       Appearance.BorderColorHot = 16371364
       Appearance.BorderColorDown = 14983778
@@ -1490,7 +1490,7 @@ object formMain: TformMain
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
-      TabOrder = 5
+      TabOrder = 6
       Text = ''
       OnChange = editFindChange
     end
@@ -7070,7 +7070,7 @@ object formMain: TformMain
         4E44AE426082}
       Rounded = False
       Transparent = True
-      TabOrder = 6
+      TabOrder = 5
       OnClick = btnSendToHexClick
       Appearance.BorderColor = 15000546
       Appearance.BorderColorHot = 16371364
@@ -7116,7 +7116,7 @@ object formMain: TformMain
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     Constraints.MinWidth = 190
-    TabOrder = 1
+    TabOrder = 2
     object panelProgress: TPanel
       Left = 0
       Top = 0
@@ -13228,11 +13228,10 @@ object formMain: TformMain
     Header.AutoSizeIndex = 0
     Header.Height = 18
     Header.Options = [hoAutoResize, hoColumnResize, hoDblClickResize, hoDrag, hoHotTrack, hoShowImages, hoVisible, hoAutoSpring]
-    Header.ParentFont = True
     Header.SortColumn = 0
     Header.Style = hsPlates
     Images = ImageList1
-    TabOrder = 2
+    TabOrder = 0
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoTristateTracking, toAutoDeleteMovedNodes]
     TreeOptions.PaintOptions = [toHideFocusRect, toPopupMode, toShowBackground, toShowButtons, toShowDropmark, toShowVertGridLines, toThemeAware, toUseBlendedImages, toUseBlendedSelection]
     TreeOptions.SelectionOptions = [toFullRowSelect]
@@ -13246,30 +13245,30 @@ object formMain: TformMain
         MinWidth = 80
         Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring]
         Position = 0
+        Text = 'Files'
         Width = 313
-        WideText = 'Files'
       end
       item
         MinWidth = 120
         Position = 1
+        Text = 'Type'
         Width = 120
-        WideText = 'Type'
       end
       item
         MaxWidth = 100
         MinWidth = 80
         Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring]
         Position = 2
+        Text = 'Size'
         Width = 80
-        WideText = 'Size'
       end
       item
         MaxWidth = 100
         MinWidth = 80
         Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring]
         Position = 3
+        Text = 'Offset'
         Width = 80
-        WideText = 'Offset'
       end>
   end
   object panelBottom: TPanel

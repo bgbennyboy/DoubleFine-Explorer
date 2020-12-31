@@ -13,7 +13,8 @@
 
 {
   Psychonauts Pc Level pack files *.ppf
-  File format seems to have changed slightly in the newer steam and gog releases.
+  File format seems to have changed in the newer steam and gog releases.
+  UNFINISHED
 }
 
 unit uDFExplorer_PPAKManager;

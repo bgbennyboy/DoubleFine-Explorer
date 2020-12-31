@@ -887,7 +887,7 @@ var
   FileType: TFileType;
 begin
   if column <> 0 then exit;
-  if Kind = ikOverlay then exit;
+  if (Kind = ikOverlay) or (Kind = ikState) then exit;
 
   FileType := fExplorer.FileType[node.Index];
 
