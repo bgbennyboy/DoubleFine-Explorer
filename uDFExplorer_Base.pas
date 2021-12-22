@@ -48,7 +48,7 @@ private
   function WriteHeaderlessDOTT_DDSToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessDOTT_DDS_CostumeToStream(SourceStream, DestStream: TStream): boolean;
   function WriteHeaderlessFT_chnk_DDSToStream(SourceStream, DestStream: TStream): boolean;
-  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDXTTYPE;
+  procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDDSTextureFormat;
     DestStream: TStream; IsCubemap: boolean = false);
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
@@ -674,7 +674,7 @@ function TDFExplorerBase.WriteHeaderlessFT_chnk_DDSToStream(SourceStream,
 var
   HeaderIndex, Width, Height, Datasize: integer;
   TempStream: TMemoryStream;
-  DXT: TDXTTYPE;
+  DXT: TDDSTextureFormat;
 begin
   result := false;
 
@@ -740,7 +740,7 @@ var
   SecondChunkDecompressedSize: integer;
   Width, Height: word;
   TempStream: TMemoryStream;
-  DXTType: TDXTType;
+  DXTType: TDDSTextureFormat;
 begin
 {
   4 bytes "TEX "
@@ -852,12 +852,12 @@ function TDFExplorerBase.WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsych
   SourceStream, DestStream: TStream): boolean;
 var
   TextureSize: integer;
-  DXTType : TDXTType;
+  DXTType : TDDSTextureFormat;
 begin
   result := false;
 
-  case PsychoDDS.TextureID of
-    0: DXTType := NO_FOURCC;
+  {case PsychoDDS.TextureID of
+    0: DXTType := A8R8G8B8; //NO_FOURCC;
     //6:  DXTType := DXT5; //??
     9:  DXTType := DXT1;
     10: DXTType := DXT3;
@@ -869,7 +869,7 @@ begin
       Log('Texture ID not yet supported ' + inttostr(PsychoDDS.TextureID));
       exit;
     end;
-  end;
+  end;}
 
   SourceStream.Position := PsychoDDS.DataOffset;
 
@@ -880,7 +880,7 @@ begin
   if (SourceStream.Size - SourceStream.Position) < TextureSize then
     TextureSize := SourceStream.Size - SourceStream.Position;
 
-  AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, DXTType,
+  AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, PsychoDDS.TextureType,
     DestStream, PsychoDDS.IsCubemap);
 
   DestStream.CopyFrom(SourceStream, TextureSize);
@@ -888,7 +888,7 @@ begin
 end;
 
 procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer;
-  DXTType: TDXTTYPE; DestStream: TStream; IsCubemap: boolean = false);
+  DXTType: TDDSTextureFormat; DestStream: TStream; IsCubemap: boolean = false);
 const
   DDSD_CAPS =                       $00000001;
   DDSD_HEIGHT =                     $00000002;
@@ -969,7 +969,12 @@ begin
   //Header.SurfaceFormat.dwDepth := 1;
   Header.SurfaceFormat.ddpfPixelFormat.dwSize := 32;
 
-  if DXTType = NO_FOURCC then
+  if (DXTType = DXT1) or (DXTType = DXT3) or (DXTType = DXT5) then
+  begin
+    Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC;
+    Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
+  end
+  else
   begin
     Header.SurfaceFormat.dwFlags := Header.SurfaceFormat.dwFlags or DDSD_PITCH;
     Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_RGB or DDPF_ALPHAPIXELS;
@@ -980,21 +985,14 @@ begin
     Header.SurfaceFormat.ddpfPixelFormat.dwRGBAlphaBitMask := $FF000000;
     Header.SurfaceFormat.dwPitchOrLinearSize := Cardinal(Height) *
       (Header.SurfaceFormat.ddpfPixelFormat.dwRGBBitCount div 8) * Cardinal(Width);
-  end
-  else
-  begin
-    Header.SurfaceFormat.ddpfPixelFormat.dwFlags := DDPF_FOURCC;
-    Header.SurfaceFormat.dwPitchOrLinearSize := Datasize;
   end;
 
 
-
-  TempFourCC := 0;
   case DXTType of
     DXT1:      TempFourCC := FOURCC_DXT1;
     DXT3:      TempFourCC := FOURCC_DXT3;
     DXT5:      TempFourCC := FOURCC_DXT5;
-    NO_FOURCC: TempFourCC := 0;
+    else       TempFourCC := 0;
   end;
 
 

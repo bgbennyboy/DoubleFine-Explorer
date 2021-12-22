@@ -44,13 +44,37 @@ type
     ft_Unknown
   );
 
+  TDDSTextureFormat = (
+    A8R8G8B8 = 0,
+    R8G8B8,
+    A4R4G4B4,
+    A1R5G5B5,
+    A0R5G5B5,
+    R5G6B5,
+    A8,
+    L8,
+    AL8,
+    DXT1,
+    DXT3,
+    DXT5,
+    V8U8,
+    V16U16,
+    PAL8
+  );
+
+  TPsychoTextureType = (
+    Bitmap = 0,
+    Cubemap,
+    VolumeMap,
+    DepthBuffer
+  );
+
   TPsychonautsDDS = class
-    TextureID: integer;
+    TextureType: TDDSTextureFormat;
     Width:     integer;
     Height:    integer;
     Mipmaps:   integer;
     DataOffset: integer;
-    //MipmapSize: integer;
     MainTextureSize: integer;
     IsCubemap: boolean;
   end;
@@ -78,12 +102,12 @@ type
     DDS_HEADERLESS_FT_CHNK
   );
 
-  TDXTTYPE = (
+  {TDXTTYPE = (
     DXT1,
     DXT3,
     DXT5,
     NO_FOURCC
-  );
+  );}
 
   TFSBCodec = (
     FMOD_SOUND_FORMAT_NONE,             //* Unitialized / unknown. */
@@ -115,31 +139,6 @@ type
     Bits: integer;
     Freq: integer;
   end;
-
-  TPsychoTextureFormat = (
-    A8R8G8B8 = 0,
-    R8G8B8,
-    A4R4G4B4,
-    A1R5G5B5,
-    A0R5G5B5,
-    R5G6B5,
-    A8,
-    L8,
-    AL8,
-    PSYDXT1,
-    PSYDXT3,
-    PSYDXT5,
-    V8U8,
-    V16U16,
-    PAL8
-  );
-
-  TPsychoTextureType = (
-    Bitmap = 0,
-    Cubemap,
-    VolumeMap,
-    DepthBuffer
-  );
 
 implementation
 

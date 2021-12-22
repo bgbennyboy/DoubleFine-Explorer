@@ -44,10 +44,10 @@ type
     function GetPsychoDDS(Index: integer): TPsychonautsDDS;
     function OLDCalculateMipmapSize(Mipmaps, TextureID, TextureSize: integer): integer;
     function OLDCalculateMainTextureSize(TextureID, Width, Height: integer): integer;
-    function CalculateIndividualTextureSize(TextureFormat: TPsychoTextureFormat; Width, Height: integer): integer;
-    function CalculateFullTextureSize(Mipmaps, Width, Height: integer; TextureFormat: TPsychoTextureFormat): integer;
+    function CalculateIndividualTextureSize(TextureFormat: TDDSTextureFormat; Width, Height: integer): integer;
+    function CalculateFullTextureSize(Mipmaps, Width, Height: integer; TextureFormat: TDDSTextureFormat): integer;
     procedure Log(Text: string); override;
-    procedure ParsePPAK_OLD_ATTEMPT;
+    //procedure ParsePPAK_OLD_ATTEMPT;
     procedure ParsePPAK;
   public
     BundleFiles: TObjectList;
@@ -207,7 +207,7 @@ var
   Path_ptr, Anim_ptr, PathLength, AnimFrameCount, CalculatedTextureSize,
   TextureWidth, TextureHeight, TextureNumMipmaps, Has_Palette, ResourceCount,
   TempWidth, TempHeight, ScriptsVersion: integer;
-  TextureFormat: TPsychoTextureFormat;
+  TextureFormat: TDDSTextureFormat;
   TextureType: TPsychoTextureType;
   FileObject: TDFFile;
 begin
@@ -255,7 +255,7 @@ begin
         raise EInvalidFile.Create( 'XT1 header expected but not found!' );
 
       TextureSize := fBundle.ReadDWord;
-      FileObject.Size := TextureSize; //***************TODO what if its not bundle version 1 and this never gets set!?!? ******************************************************************************************
+      FileObject.Size := TextureSize;
     end
     else
       Log('WARNING bundle version 0 so texturesize potentially not set!*****************');
@@ -286,7 +286,7 @@ begin
     begin
       //Now at texture structure
       fBundle.Seek(4, soFromCurrent); //element_id
-      TextureFormat     := TPsychoTextureFormat(fBundle.ReadDWord);
+      TextureFormat     := TDDSTextureFormat(fBundle.ReadDWord);
       TextureType       := TPsychoTextureType(fBundle.ReadDWord);
       fBundle.Seek(4, soFromCurrent); //Flags
       TextureWidth      := fBundle.ReadDWord;
@@ -331,7 +331,7 @@ begin
     //Now texture data
     //Store the texture info - for decoding later
     FileObject.PsychonautsDDS := TPsychonautsDDS.Create;
-    FileObject.PsychonautsDDS.TextureID   := Ord(TextureFormat);  //TODO CHANGE FOR TYPE
+    FileObject.PsychonautsDDS.TextureType := TextureFormat;
     FileObject.PsychonautsDDS.Width       := TextureWidth;
     FileObject.PsychonautsDDS.Height      := TextureHeight;
     FileObject.PsychonautsDDS.Mipmaps     := TextureNumMipmaps;
@@ -448,7 +448,7 @@ end;
 
 
 function TPPAKManager.CalculateIndividualTextureSize(
-  TextureFormat: TPsychoTextureFormat; Width, Height: integer): integer;
+  TextureFormat: TDDSTextureFormat; Width, Height: integer): integer;
 begin
   result := 0;
 
@@ -457,13 +457,13 @@ begin
     R8G8B8:                                     result := (Width * Height) * 3;
     A4R4G4B4, A1R5G5B5, A0R5G5B5, R5G6B5, V8U8: result := (Width * Height) * 2;
     L8,A8, AL8, PAL8:                           result := (Width * Height);
-    PSYDXT1:                                    result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 8;
-    PSYDXT3, PSYDXT5:                           result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 16;
+    DXT1:                                    result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 8;
+    DXT3, DXT5:                           result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 16;
   end;
 end;
 
 function TPPAKManager.CalculateFullTextureSize(Mipmaps, Width, Height: integer;
-  TextureFormat: TPsychoTextureFormat): integer;
+  TextureFormat: TDDSTextureFormat): integer;
 var
   i: Integer;
 begin
@@ -561,7 +561,7 @@ begin
 end;
 
 
-
+{
 procedure TPPAKManager.ParsePPAK_OLD_ATTEMPT;
 var
   TotalNumFiles, NumFiles, i, FileSize, StringLength: integer;
@@ -619,7 +619,7 @@ begin
         NumFiles := i;
         break;
       end;}
-    end;
+    {end;
 
     FileSize := fBundle.ReadDWord; //Size of this file excluding the 8 bytes
     FileObject.Size := FileSize + 8; //Size of this file + the 8 bytes we've already read
@@ -801,7 +801,7 @@ begin
 
   if (Assigned(FOnDoneLoading)) then
 	  FOnDoneLoading(BundleFiles.Count);
-end;
+end; }
 
 procedure TPPAKManager.SaveFile(FileNo: integer; DestDir, FileName: string);
 var
