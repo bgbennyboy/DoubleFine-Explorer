@@ -771,18 +771,18 @@ object Aboutfrm: TAboutfrm
     Height = 188
     Alignment = taCenter
     Items.Strings = (
-      'Doublefine Explorer'
+      'Double Fine Explorer'
       ''
       'Version'
       ''
       'By Bennyboy'
       ''
-      'http://quickandeasysoftware.net'
+      'https://quickandeasysoftware.net'
       ''
       ''
       'Credits/Thanks:'
       ''
-      'Doublefine for their wonderful games'
+      'Double Fine for their wonderful games'
       ''
       'Luigi Auriemma'
       'Information on FSB files'

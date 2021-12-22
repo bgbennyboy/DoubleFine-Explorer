@@ -55,8 +55,8 @@ public
   destructor Destroy; override;
   function DrawImageGeneric(FileIndex: integer; DestBitmap: TBitmap32): boolean;
   function DrawImageDOTTFont(FileIndex: integer; DestBitmap: TBitmap32): boolean;
-  function DrawImageDDS(FileIndex: integer; DestBitmap: TBitmap32; DDSType:
-    TDDSType = DDS_NORMAL): boolean;
+  function DrawImageDDS(FileIndex: integer;
+  DestBitmap: TBitmap32; DDSType: TDDSType = DDS_NORMAL): boolean;
   function SaveDDSToFile(FileIndex: integer; DestDir, FileName: string; DDSType:
     TDDSType = DDS_NORMAL): boolean;
   function SaveIMCToStream(FileNo: integer; DestStream: TStream): boolean;

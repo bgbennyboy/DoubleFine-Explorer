@@ -116,6 +116,30 @@ type
     Freq: integer;
   end;
 
+  TPsychoTextureFormat = (
+    A8R8G8B8 = 0,
+    R8G8B8,
+    A4R4G4B4,
+    A1R5G5B5,
+    A0R5G5B5,
+    R5G6B5,
+    A8,
+    L8,
+    AL8,
+    PSYDXT1,
+    PSYDXT3,
+    PSYDXT5,
+    V8U8,
+    V16U16,
+    PAL8
+  );
+
+  TPsychoTextureType = (
+    Bitmap = 0,
+    Cubemap,
+    VolumeMap,
+    DepthBuffer
+  );
 
 implementation
 
