@@ -42,8 +42,8 @@ type
     function GetFileType(Index: integer): TFiletype; override;
     function GetFileExtension(Index: integer): string; override;
     function GetPsychoDDS(Index: integer): TPsychonautsDDS;
-    function OLDCalculateMipmapSize(Mipmaps, TextureID, TextureSize: integer): integer;
-    function OLDCalculateMainTextureSize(TextureID, Width, Height: integer): integer;
+    //function OLDCalculateMipmapSize(Mipmaps, TextureID, TextureSize: integer): integer;
+    //function OLDCalculateMainTextureSize(TextureID, Width, Height: integer): integer;
     function CalculateIndividualTextureSize(TextureFormat: TDDSTextureFormat; Width, Height: integer): integer;
     function CalculateFullTextureSize(Mipmaps, Width, Height: integer; TextureFormat: TDDSTextureFormat): integer;
     procedure Log(Text: string); override;
@@ -206,7 +206,7 @@ var
   BundleVersion, LanguageID, LanguageSize, TextureCount, i, j, TextureSize,
   Path_ptr, Anim_ptr, PathLength, AnimFrameCount, CalculatedTextureSize,
   TextureWidth, TextureHeight, TextureNumMipmaps, Has_Palette, ResourceCount,
-  TempWidth, TempHeight, ScriptsVersion: integer;
+  TempWidth, TempHeight, ScriptsVersion, TextureDataStart: integer;
   TextureFormat: TDDSTextureFormat;
   TextureType: TPsychoTextureType;
   FileObject: TDFFile;
@@ -258,7 +258,7 @@ begin
       FileObject.Size := TextureSize;
     end
     else
-      Log('WARNING bundle version 0 so texturesize potentially not set!*****************');
+      Log('WARNING bundle version 0 so texturesize + fileobjectsize potentially not set!*****************');
 
     fBundle.Seek(12, soFromCurrent); // element_id, texture_handle, palette_handle
     Path_ptr := fBundle.ReadDWord;
@@ -273,13 +273,15 @@ begin
       FileObject.FileExtension := ExtractFileExt( FileObject.FileName );
     end;
 
-    AnimFrameCount := 1;
+
     //If its an animation
     if Anim_ptr <> 0 then
     begin
       AnimFrameCount := fBundle.ReadDWord;
       fBundle.Seek(24, soFromCurrent); //Rest of anim info
-    end;
+    end
+    else
+      AnimFrameCount := 1;
 
     //Multiple animation frames means we have to parse them all. First file in common.ppf for example
     for j := 0 to AnimFrameCount -1 do
@@ -294,13 +296,19 @@ begin
       TextureNumMipmaps := fBundle.ReadDWord;
       fBundle.Seek(16, soFromCurrent);
 
-      Has_Palette := 0;
+
       if TextureFormat = PAL8 then
       begin
         Has_Palette := fBundle.ReadWord;
         if Has_Palette <> 0 then
           fBundle.Seek(4, soFromCurrent); //Seek past the palette
-      end;
+      end
+      else
+        Has_Palette := 0;
+
+      //Store current pos for where texture data actually begins
+      if j=0 then
+        TextureDataStart := fBundle.Position - FileObject.Offset;
 
       //Taken from John's code. Corrects for mipmaps being 0 when...they arent.
       if TextureNumMipmaps = 0 then
@@ -335,9 +343,9 @@ begin
     FileObject.PsychonautsDDS.Width       := TextureWidth;
     FileObject.PsychonautsDDS.Height      := TextureHeight;
     FileObject.PsychonautsDDS.Mipmaps     := TextureNumMipmaps;
-    FileObject.PsychonautsDDS.DataOffset  := fBundle.Position - FileObject.Offset;
+    FileObject.PsychonautsDDS.DataOffset  := TextureDataStart; //fBundle.Position - FileObject.Offset;
     //FileObject.PsychonautsDDS.MipmapSize := CalculateMipmapSize(TextureNumMipmaps, TextureID, FileObject.Size - FileObject.PsychonautsDDS.DataOffset);
-    FileObject.PsychonautsDDS.MainTextureSize := CalculatedTextureSize; //CalculateTextureSize(TextureFormat, TextureWidth, TextureHeight);
+    FileObject.PsychonautsDDS.MainTextureSize := CalculateIndividualTextureSize(TextureFormat, TextureWidth, TextureHeight); //CalculatedTextureSize; //CalculateTextureSize(TextureFormat, TextureWidth, TextureHeight);
     FileObject.PsychonautsDDS.IsCubemap := (TextureType = Cubemap);  //TODO swap for enum TPsychoTextureType and just store that
 
     //Log('Offset=' +  inttostr(fBUndle.Position) + ' CalculatedTextureSize=' + inttostr(CalculatedTextureSize ));
@@ -457,9 +465,11 @@ begin
     R8G8B8:                                     result := (Width * Height) * 3;
     A4R4G4B4, A1R5G5B5, X1R5G5B5, R5G6B5, V8U8: result := (Width * Height) * 2;
     L8,A8, AL8, PAL8:                           result := (Width * Height);
-    DXT1:                                    result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 8;
-    DXT3, DXT5:                           result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 16;
-  end;
+    DXT1:                                       result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 8;
+    DXT3, DXT5:                                 result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 16;
+    else
+      Log('Texture size not calculated for ' + TRttiEnumerationType.GetName(TextureFormat));
+  end
 end;
 
 function TPPAKManager.CalculateFullTextureSize(Mipmaps, Width, Height: integer;
@@ -503,7 +513,7 @@ end;
 
 //****************************************************************************************************************
 
-function TPPAKManager.OLDCalculateMainTextureSize(TextureID, Width,
+{function TPPAKManager.OLDCalculateMainTextureSize(TextureID, Width,
   Height: integer): integer;
 begin
   result := 0;
@@ -558,7 +568,7 @@ begin
     end;
   end;
 
-end;
+end; }
 
 
 {

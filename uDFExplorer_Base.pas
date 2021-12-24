@@ -854,31 +854,16 @@ function TDFExplorerBase.WriteHeaderlessPsychonautsDDSToStream(PsychoDDS: TPsych
   SourceStream, DestStream: TStream): boolean;
 var
   TextureSize: integer;
-  DXTType : TDDSTextureFormat;
+  //DXTType : TDDSTextureFormat;
 begin
-  result := false;
-
-  {case PsychoDDS.TextureID of
-    0: DXTType := A8R8G8B8; //NO_FOURCC;
-    //6:  DXTType := DXT5; //??
-    9:  DXTType := DXT1;
-    10: DXTType := DXT3;
-    11: DXTType := DXT5;
-    //12: DXTType := 0; //24 bit??
-    //14: DXTType := DXT5; //CHECK - 14 special case
-    else
-    begin
-      Log('Texture ID not yet supported ' + inttostr(PsychoDDS.TextureID));
-      exit;
-    end;
-  end;}
+  //result := false;
 
   SourceStream.Position := PsychoDDS.DataOffset;
 
   //Just main texture - ignore any mipmaps
   TextureSize := PsychoDDS.MainTextureSize;
 
-  //Parsing textureid 0 is not always correct and very hacky
+  //Some texture sizes incorrect
   if (SourceStream.Size - SourceStream.Position) < TextureSize then
     TextureSize := SourceStream.Size - SourceStream.Position;
 
@@ -886,7 +871,7 @@ begin
   //  DestStream, PsychoDDS.IsCubemap);
 
   AddDDSHeaderToStreamNEW(PsychoDDS.Width, PsychoDDS.Height, TextureSize, PsychoDDS.TextureType,
-    DestStream, PsychoDDS.IsCubemap, False, PsychoDDS.Mipmaps);
+    DestStream, PsychoDDS.IsCubemap, False, 1);
 
 
   DestStream.CopyFrom(SourceStream, TextureSize);
@@ -959,7 +944,7 @@ const
 
 type
   { Stores the pixel format information.}
-  TDDPixelFormat = packed record
+  TDDPixelFormat =  record
     Size: UInt32;       // Size of the structure = 32 bytes
     Flags: UInt32;      // Flags to indicate valid fields
     FourCC: UInt32;     // Four-char code for compressed textures (DXT)
@@ -971,14 +956,14 @@ type
   end;
 
   { Specifies capabilities of surface.}
-  TDDSCaps = packed record
+  TDDSCaps =  record
     Caps1: UInt32;      // Should always include DDSCAPS_TEXTURE
     Caps2: UInt32;      // For cubic environment maps
     Reserved: array[0..1] of UInt32; // Reserved
   end;
 
   { Record describing DDS file contents.}
-  TDDSurfaceDesc2 = packed record
+  TDDSurfaceDesc2 =  record
     Size: UInt32;       // Size of the structure = 124 Bytes
     Flags: UInt32;      // Flags to indicate valid fields
     Height: UInt32;     // Height of the main image in pixels
@@ -995,7 +980,7 @@ type
   end;
 
   { DDS file header.}
-  TDDSFileHeader = packed record
+  TDDSFileHeader =  record
     Magic: UInt32;       // File format magic
     Desc: TDDSurfaceDesc2; // Surface description
   end;
@@ -1130,7 +1115,7 @@ type
   );
 
   { DX10 extension header for DDS file format }
-  TDX10Header = packed record
+  TDX10Header =  record
     DXGIFormat: TDXGIFormat;
     ResourceDimension: TD3D10ResourceDimension;
     MiscFlags: UInt32;
@@ -1138,22 +1123,23 @@ type
     Reserved: UInt32;
   end;
 
-procedure FillPixelFormat(Pix: TDDPixelFormat; Flags, BitCount, RedMask, GreenMask, BlueMask, AlphaMask: UInt32);
-begin
-  Pix.Flags := Flags;
-  Pix.BitCount := BitCount;
-  Pix.RedMask := RedMask;
-  Pix.GreenMask := GreenMask;
-  Pix.BlueMask := BlueMask;
-  Pix.AlphaMask := AlphaMask;
-end;
+  procedure FillPixelFormat(var Pix: TDDPixelFormat; Flags, BitCount, RedMask, GreenMask, BlueMask, AlphaMask: UInt32);
+  begin
+    Pix.Flags := Flags;
+    Pix.BitCount := BitCount;
+    Pix.RedMask := RedMask;
+    Pix.GreenMask := GreenMask;
+    Pix.BlueMask := BlueMask;
+    Pix.AlphaMask := AlphaMask;
+  end;
 
 var
   Hdr: TDDSFileHeader;
-  i, j, ImageCount, FSaveDepth, FSaveMipMapCount: integer;
+  i, {ImageCount,FSaveMipMapCount,} FSaveDepth: integer;
+  j: cardinal;
 begin
-  FSaveDepth := 1; //Need this info setting as a param. Its supposed to be Sets the depth (slices of volume texture or faces of cube map) of the next saved DDS file
-  FSaveMipMapCount := MipMapCount;
+  FSaveDepth := 6; //Need this info setting as a param. Its supposed to be: Sets the depth (slices of volume texture or faces of cube map) of the next saved DDS file
+  //FSaveMipMapCount := MipMapCount;
 
   FillChar(Hdr, Sizeof(Hdr), 0);
   Hdr.Magic := DDSMagic;
@@ -1164,7 +1150,7 @@ begin
   Hdr.Desc.Caps.Caps1 := DDSCAPS_TEXTURE;
   Hdr.Desc.PixelFormat.Size := SizeOf(Hdr.Desc.PixelFormat);
   Hdr.Desc.PitchOrLinearSize := Datasize;
-  ImageCount := MipMapCount;
+  //ImageCount := MipMapCount;
 
   if MipMapCount > 1 then
   begin
@@ -1186,7 +1172,7 @@ begin
       Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or J;
       J := J shl 1;
     end;
-    ImageCount := FSaveDepth * FSaveMipMapCount;
+    //ImageCount := FSaveDepth * FSaveMipMapCount;
   end
   else if IsVolume then
   begin
@@ -1195,14 +1181,15 @@ begin
     Hdr.Desc.Caps.Caps1 := Hdr.Desc.Caps.Caps1 or DDSCAPS_COMPLEX;
     Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or DDSCAPS2_VOLUME;
     Hdr.Desc.Depth := FSaveDepth;
-    ImageCount := GetVolumeLevelCount(FSaveDepth, FSaveMipMapCount);
+    //ImageCount := GetVolumeLevelCount(FSaveDepth, FSaveMipMapCount);
   end;
 
 
   // Now we set DDS pixel format for main image
   if (DXTType = DXT1) or (DXTType = DXT3) or (DXTType = DXT5) then
   begin
-    Hdr.Desc.PixelFormat.Flags := DDPF_FOURCC;
+    //Hdr.Desc.PixelFormat.Flags := DDPF_FOURCC;
+    FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_FOURCC, 0, 0, 0, 0, 0);
     case DXTType of
       DXT1: Hdr.Desc.PixelFormat.FourCC := FOURCC_DXT1;
       DXT3: Hdr.Desc.PixelFormat.FourCC := FOURCC_DXT3;
