@@ -210,6 +210,7 @@ var
   TextureFormat: TDDSTextureFormat;
   TextureType: TPsychoTextureType;
   FileObject: TDFFile;
+  LanguageHeader: word;
 begin
   fBundle.Position:= 0;
 
@@ -225,133 +226,139 @@ begin
     fBundle.Seek(-2, soFromCurrent); //If identifier not there this whole section doesnt exist
 
   //Language section marker 0xFFFF
-  if fBundle.ReadWord() = $FFFF then
-  begin
-    LanguageID := fBundle.ReadWord();
-    LanguageSize := fBundle.ReadDWord();
-  end
-  else
-    fBundle.Seek(-2, soFromCurrent); //If identifier not there this whole section doesnt exist
-
-  TextureCount := fBundle.ReadWord();
-
-  Log(IntToStr(TextureCount));
-  //Log('Bundle pos before textures' + inttostr(fBundle.Position));
-
-  for i := 0 to TextureCount -1 do
-  begin
-    FileObject                 := TDFFile.Create;
-    FileObject.Compressed      := false;
-    FileObject.CompressionType := 0;
-    FileObject.FileTypeIndex   := -1;
-    FileObject.FileExtension   := '';
-    FileObject.Offset          := fBundle.Position;
-    FileObject.FileType        := ft_HeaderlessPsychoDDSImage;
-
-    TextureSize := 0;
-    if BundleVersion = 1 then
+  //If languages block is present then there's often multiple language blocks each with multiple textures eg in BBA1.ppf.
+  //No counter for how many language blocks there are so just keep repeating until we dont get a 0xFFFF language header so we are onto the MPAK section.
+  LanguageHeader := 0;
+  repeat
+    LanguageHeader := fBundle.ReadWord();
+    if LanguageHeader = $FFFF then
     begin
-      if fBundle.ReadDWord <> $31545820 then  //' XT1' identifier
-        raise EInvalidFile.Create( 'XT1 header expected but not found!' );
-
-      TextureSize := fBundle.ReadDWord;
-      FileObject.Size := TextureSize;
+      LanguageID := fBundle.ReadWord();
+      LanguageSize := fBundle.ReadDWord();
     end
     else
-      Log('WARNING bundle version 0 so texturesize + fileobjectsize potentially not set!*****************');
+      fBundle.Seek(-2, soFromCurrent); //If identifier not there this whole section doesnt exist
 
-    fBundle.Seek(12, soFromCurrent); // element_id, texture_handle, palette_handle
-    Path_ptr := fBundle.ReadDWord;
-    Anim_ptr := fBundle.ReadDWord;
-    fBundle.Seek(20, soFromCurrent); // density, visual_importance, memory_importance, unknown0, flags
+    TextureCount := fBundle.ReadWord();
 
-    //If there's a path
-    if Path_ptr <> 0 then
+    Log(IntToStr(TextureCount));
+    //Log('Bundle pos before textures' + inttostr(fBundle.Position));
+
+    for i := 0 to TextureCount -1 do
     begin
-      PathLength := fBundle.ReadWord;
-      FileObject.FileName := PChar(fBundle.ReadString(PathLength)); //Null terminated
-      FileObject.FileExtension := ExtractFileExt( FileObject.FileName );
-    end;
+      FileObject                 := TDFFile.Create;
+      FileObject.Compressed      := false;
+      FileObject.CompressionType := 0;
+      FileObject.FileTypeIndex   := -1;
+      FileObject.FileExtension   := '';
+      FileObject.Offset          := fBundle.Position;
+      FileObject.FileType        := ft_HeaderlessPsychoDDSImage;
 
-
-    //If its an animation
-    if Anim_ptr <> 0 then
-    begin
-      AnimFrameCount := fBundle.ReadDWord;
-      fBundle.Seek(24, soFromCurrent); //Rest of anim info
-    end
-    else
-      AnimFrameCount := 1;
-
-    //Multiple animation frames means we have to parse them all. First file in common.ppf for example
-    for j := 0 to AnimFrameCount -1 do
-    begin
-      //Now at texture structure
-      fBundle.Seek(4, soFromCurrent); //element_id
-      TextureFormat     := TDDSTextureFormat(fBundle.ReadDWord);
-      TextureType       := TPsychoTextureType(fBundle.ReadDWord);
-      fBundle.Seek(4, soFromCurrent); //Flags
-      TextureWidth      := fBundle.ReadDWord;
-      TextureHeight     := fBundle.ReadDWord;
-      TextureNumMipmaps := fBundle.ReadDWord;
-      fBundle.Seek(16, soFromCurrent);
-
-
-      if TextureFormat = PAL8 then
+      TextureSize := 0;
+      if BundleVersion = 1 then
       begin
-        Has_Palette := fBundle.ReadWord;
-        if Has_Palette <> 0 then
-          fBundle.Seek(4, soFromCurrent); //Seek past the palette
+        if fBundle.ReadDWord <> $31545820 then  //' XT1' identifier
+          raise EInvalidFile.Create( 'XT1 header expected but not found!' );
+
+        TextureSize := fBundle.ReadDWord;
+        FileObject.Size := TextureSize;
       end
       else
-        Has_Palette := 0;
+        Log('WARNING bundle version 0 so texturesize + fileobjectsize potentially not set!*****************');
 
-      //Store current pos for where texture data actually begins
-      if j=0 then
-        TextureDataStart := fBundle.Position - FileObject.Offset;
+      fBundle.Seek(12, soFromCurrent); // element_id, texture_handle, palette_handle
+      Path_ptr := fBundle.ReadDWord;
+      Anim_ptr := fBundle.ReadDWord;
+      fBundle.Seek(20, soFromCurrent); // density, visual_importance, memory_importance, unknown0, flags
 
-      //Taken from John's code. Corrects for mipmaps being 0 when...they arent.
-      if TextureNumMipmaps = 0 then
+      //If there's a path
+      if Path_ptr <> 0 then
       begin
-        Log('Mipmaps=0 so correcting...');
-        TempWidth := TextureWidth;
-        TempHeight := TextureHeight;
-        while (TempWidth > 0) and (TempHeight > 0) do
-        begin
-          TempWidth := TempWidth shr 1;
-          TempHeight := TempHeight shr 1;
-          TextureNumMipmaps := TextureNumMipmaps + 1;
-        end;
+        PathLength := fBundle.ReadWord;
+        FileObject.FileName := PChar(fBundle.ReadString(PathLength)); //Null terminated
+        FileObject.FileExtension := ExtractFileExt( FileObject.FileName );
       end;
 
-      Log(FileObject.FileName + ' TextureSize=' + IntToStr(TextureSize) + ' Width=' + IntToStr(TextureWidth) + ' Height=' + IntToStr(TextureHeight) + ' HasPalette=' + inttostr(Has_Palette) + ' AnimFrameCount=' + IntToStr(AnimFrameCount) + ' TextureType=' + TRttiEnumerationType.GetName(TextureType) + ' TextureFormat=' + TRttiEnumerationType.GetName(TextureFormat) + ' TextureNumMipmaps=' + inttostr(TextureNumMipmaps));
 
-      CalculatedTextureSize := CalculateFullTextureSize(TextureNumMipmaps, TextureWidth, TextureHeight, TextureFormat);
+      //If its an animation
+      if Anim_ptr <> 0 then
+      begin
+        AnimFrameCount := fBundle.ReadDWord;
+        fBundle.Seek(24, soFromCurrent); //Rest of anim info
+      end
+      else
+        AnimFrameCount := 1;
 
-      if TextureType = Cubemap then
-        CalculatedTextureSize := CalculatedTextureSize * 6;
+      //Multiple animation frames means we have to parse them all. First file in common.ppf for example
+      for j := 0 to AnimFrameCount -1 do
+      begin
+        //Now at texture structure
+        fBundle.Seek(4, soFromCurrent); //element_id
+        TextureFormat     := TDDSTextureFormat(fBundle.ReadDWord);
+        TextureType       := TPsychoTextureType(fBundle.ReadDWord);
+        fBundle.Seek(4, soFromCurrent); //Flags
+        TextureWidth      := fBundle.ReadDWord;
+        TextureHeight     := fBundle.ReadDWord;
+        TextureNumMipmaps := fBundle.ReadDWord;
+        fBundle.Seek(16, soFromCurrent);
 
-      Log('Offset before seek past texture=' +  inttostr(fBUndle.Position) + ' CalculatedTextureSize=' + inttostr(CalculatedTextureSize ));
 
-      fBundle.Seek(CalculatedTextureSize, soFromCurrent); //Seek past the texture
+        if TextureFormat = PAL8 then
+        begin
+          Has_Palette := fBundle.ReadWord;
+          if Has_Palette <> 0 then
+            fBundle.Seek(4, soFromCurrent); //Seek past the palette
+        end
+        else
+          Has_Palette := 0;
+
+        //Store current pos for where texture data actually begins
+        if j=0 then
+          TextureDataStart := fBundle.Position - FileObject.Offset;
+
+        //Taken from John's code. Corrects for mipmaps being 0 when...they arent.
+        if TextureNumMipmaps = 0 then
+        begin
+          Log('Mipmaps=0 so correcting...');
+          TempWidth := TextureWidth;
+          TempHeight := TextureHeight;
+          while (TempWidth > 0) and (TempHeight > 0) do
+          begin
+            TempWidth := TempWidth shr 1;
+            TempHeight := TempHeight shr 1;
+            TextureNumMipmaps := TextureNumMipmaps + 1;
+          end;
+        end;
+
+        Log(FileObject.FileName + ' TextureSize=' + IntToStr(TextureSize) + ' Width=' + IntToStr(TextureWidth) + ' Height=' + IntToStr(TextureHeight) + ' HasPalette=' + inttostr(Has_Palette) + ' AnimFrameCount=' + IntToStr(AnimFrameCount) + ' TextureType=' + TRttiEnumerationType.GetName(TextureType) + ' TextureFormat=' + TRttiEnumerationType.GetName(TextureFormat) + ' TextureNumMipmaps=' + inttostr(TextureNumMipmaps));
+
+        CalculatedTextureSize := CalculateFullTextureSize(TextureNumMipmaps, TextureWidth, TextureHeight, TextureFormat);
+
+        if TextureType = Cubemap then
+          CalculatedTextureSize := CalculatedTextureSize * 6;
+
+        Log('Offset before seek past texture=' +  inttostr(fBUndle.Position) + ' CalculatedTextureSize=' + inttostr(CalculatedTextureSize ));
+
+        fBundle.Seek(CalculatedTextureSize, soFromCurrent); //Seek past the texture
+      end;
+
+      //Now texture data
+      //Store the texture info - for decoding later
+      FileObject.PsychonautsDDS := TPsychonautsDDS.Create;
+      FileObject.PsychonautsDDS.TextureType := TextureFormat;
+      FileObject.PsychonautsDDS.Width       := TextureWidth;
+      FileObject.PsychonautsDDS.Height      := TextureHeight;
+      FileObject.PsychonautsDDS.Mipmaps     := TextureNumMipmaps;
+      FileObject.PsychonautsDDS.DataOffset  := TextureDataStart; //fBundle.Position - FileObject.Offset;
+      //FileObject.PsychonautsDDS.MipmapSize := CalculateMipmapSize(TextureNumMipmaps, TextureID, FileObject.Size - FileObject.PsychonautsDDS.DataOffset);
+      FileObject.PsychonautsDDS.MainTextureSize := CalculateIndividualTextureSize(TextureFormat, TextureWidth, TextureHeight); //CalculatedTextureSize; //CalculateTextureSize(TextureFormat, TextureWidth, TextureHeight);
+      FileObject.PsychonautsDDS.IsCubemap := (TextureType = Cubemap);  //TODO swap for enum TPsychoTextureType and just store that
+
+      //Log('Offset=' +  inttostr(fBUndle.Position) + ' CalculatedTextureSize=' + inttostr(CalculatedTextureSize ));
+
+      BundleFiles.Add(FileObject);
     end;
-
-    //Now texture data
-    //Store the texture info - for decoding later
-    FileObject.PsychonautsDDS := TPsychonautsDDS.Create;
-    FileObject.PsychonautsDDS.TextureType := TextureFormat;
-    FileObject.PsychonautsDDS.Width       := TextureWidth;
-    FileObject.PsychonautsDDS.Height      := TextureHeight;
-    FileObject.PsychonautsDDS.Mipmaps     := TextureNumMipmaps;
-    FileObject.PsychonautsDDS.DataOffset  := TextureDataStart; //fBundle.Position - FileObject.Offset;
-    //FileObject.PsychonautsDDS.MipmapSize := CalculateMipmapSize(TextureNumMipmaps, TextureID, FileObject.Size - FileObject.PsychonautsDDS.DataOffset);
-    FileObject.PsychonautsDDS.MainTextureSize := CalculateIndividualTextureSize(TextureFormat, TextureWidth, TextureHeight); //CalculatedTextureSize; //CalculateTextureSize(TextureFormat, TextureWidth, TextureHeight);
-    FileObject.PsychonautsDDS.IsCubemap := (TextureType = Cubemap);  //TODO swap for enum TPsychoTextureType and just store that
-
-    //Log('Offset=' +  inttostr(fBUndle.Position) + ' CalculatedTextureSize=' + inttostr(CalculatedTextureSize ));
-
-    BundleFiles.Add(FileObject);
-  end;
+  until LanguageHeader <>  $FFFF;
 
   //MPAK section
   if fBundle.ReadBlockName <> 'MPAK' then
