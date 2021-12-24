@@ -18,7 +18,7 @@ interface
 uses
   Classes, sysutils, windows, graphics,
 
-  GR32, ImagingComponents, ZlibEx, ZlibExGz, ImagingTypes, Imaging,
+  GR32, ImagingComponents, ZlibEx, ZlibExGz, ImagingTypes, Imaging, ImagingUtility,
 
   uDFExplorer_Types, uDFExplorer_BaseBundleManager, uMemReader, uDFExplorer_Funcs,
   uDFExplorer_FSBManager, uDFExplorer_PAKManager, uDFExplorer_PCKManager,
@@ -50,6 +50,8 @@ private
   function WriteHeaderlessFT_chnk_DDSToStream(SourceStream, DestStream: TStream): boolean;
   procedure AddDDSHeaderToStream(Width, Height, DataSize: integer; DXTType: TDDSTextureFormat;
     DestStream: TStream; IsCubemap: boolean = false);
+  procedure AddDDSHeaderToStreamNEW(Width, Height, DataSize: integer; DXTType: TDDSTextureFormat;
+    DestStream: TStream; IsCubemap: boolean = false; IsVolume: boolean = false; MipmapCount: integer = 1);
 public
   constructor Create(BundleFile: string; Debug: TDebugEvent);
   destructor Destroy; override;
@@ -880,11 +882,356 @@ begin
   if (SourceStream.Size - SourceStream.Position) < TextureSize then
     TextureSize := SourceStream.Size - SourceStream.Position;
 
-  AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, PsychoDDS.TextureType,
-    DestStream, PsychoDDS.IsCubemap);
+  //AddDDSHeaderToStream(PsychoDDS.Width, PsychoDDS.Height, TextureSize, PsychoDDS.TextureType,
+  //  DestStream, PsychoDDS.IsCubemap);
+
+  AddDDSHeaderToStreamNEW(PsychoDDS.Width, PsychoDDS.Height, TextureSize, PsychoDDS.TextureType,
+    DestStream, PsychoDDS.IsCubemap, False, PsychoDDS.Mipmaps);
+
 
   DestStream.CopyFrom(SourceStream, TextureSize);
   Result := true;
+end;
+
+procedure TDFExplorerBase.AddDDSHeaderToStreamNEW(Width, Height, DataSize: integer;
+  DXTType: TDDSTextureFormat; DestStream: TStream; IsCubemap: boolean = false;
+   IsVolume: boolean = false; MipmapCount: integer = 1);
+const
+  { Four character codes.}
+  DDSMagic    = UInt32(Byte('D') or (Byte('D') shl 8) or (Byte('S') shl 16) or
+    (Byte(' ') shl 24));
+  FOURCC_DXT1 = UInt32(Byte('D') or (Byte('X') shl 8) or (Byte('T') shl 16) or
+    (Byte('1') shl 24));
+  FOURCC_DXT3 = UInt32(Byte('D') or (Byte('X') shl 8) or (Byte('T') shl 16) or
+    (Byte('3') shl 24));
+  FOURCC_DXT5 = UInt32(Byte('D') or (Byte('X') shl 8) or (Byte('T') shl 16) or
+    (Byte('5') shl 24));
+  FOURCC_ATI1 = UInt32(Byte('A') or (Byte('T') shl 8) or (Byte('I') shl 16) or
+    (Byte('1') shl 24));
+  FOURCC_ATI2 = UInt32(Byte('A') or (Byte('T') shl 8) or (Byte('I') shl 16) or
+    (Byte('2') shl 24));
+  FOURCC_DX10 = UInt32(Byte('D') or (Byte('X') shl 8) or (Byte('1') shl 16) or
+    (Byte('0') shl 24));
+
+  { Some D3DFORMAT values used in DDS files as FourCC value.}
+  D3DFMT_A16B16G16R16  = 36;
+  D3DFMT_R32F          = 114;
+  D3DFMT_A32B32G32R32F = 116;
+  D3DFMT_R16F          = 111;
+  D3DFMT_A16B16G16R16F = 113;
+
+  { Constans used by TDDSurfaceDesc2.Flags.}
+  DDSD_CAPS            = $00000001;
+  DDSD_HEIGHT          = $00000002;
+  DDSD_WIDTH           = $00000004;
+  DDSD_PITCH           = $00000008;
+  DDSD_PIXELFORMAT     = $00001000;
+  DDSD_MIPMAPCOUNT     = $00020000;
+  DDSD_LINEARSIZE      = $00080000;
+  DDSD_DEPTH           = $00800000;
+
+  { Constans used by TDDSPixelFormat.Flags.}
+  DDPF_ALPHAPIXELS     = $00000001;    // used by formats which contain alpha
+  DDPF_FOURCC          = $00000004;    // used by DXT and large ARGB formats
+  DDPF_RGB             = $00000040;    // used by RGB formats
+  DDPF_LUMINANCE       = $00020000;    // used by formats like D3DFMT_L16
+  DDPF_BUMPLUMINANCE   = $00040000;    // used by mixed signed-unsigned formats
+  DDPF_BUMPDUDV        = $00080000;    // used by signed formats
+
+  { Constans used by TDDSCaps.Caps1.}
+  DDSCAPS_COMPLEX      = $00000008;
+  DDSCAPS_TEXTURE      = $00001000;
+  DDSCAPS_MIPMAP       = $00400000;
+
+  { Constans used by TDDSCaps.Caps2.}
+  DDSCAPS2_CUBEMAP     = $00000200;
+  DDSCAPS2_POSITIVEX   = $00000400;
+  DDSCAPS2_NEGATIVEX   = $00000800;
+  DDSCAPS2_POSITIVEY   = $00001000;
+  DDSCAPS2_NEGATIVEY   = $00002000;
+  DDSCAPS2_POSITIVEZ   = $00004000;
+  DDSCAPS2_NEGATIVEZ   = $00008000;
+  DDSCAPS2_VOLUME      = $00200000;
+
+  { Flags for TDDSurfaceDesc2.Flags used when saving DDS file.}
+  DDS_SAVE_FLAGS = DDSD_CAPS or DDSD_PIXELFORMAT or DDSD_WIDTH or
+    DDSD_HEIGHT or DDSD_LINEARSIZE;
+
+type
+  { Stores the pixel format information.}
+  TDDPixelFormat = packed record
+    Size: UInt32;       // Size of the structure = 32 bytes
+    Flags: UInt32;      // Flags to indicate valid fields
+    FourCC: UInt32;     // Four-char code for compressed textures (DXT)
+    BitCount: UInt32;   // Bits per pixel if uncomp. usually 16,24 or 32
+    RedMask: UInt32;    // Bit mask for the Red component
+    GreenMask: UInt32;  // Bit mask for the Green component
+    BlueMask: UInt32;   // Bit mask for the Blue component
+    AlphaMask: UInt32;  // Bit mask for the Alpha component
+  end;
+
+  { Specifies capabilities of surface.}
+  TDDSCaps = packed record
+    Caps1: UInt32;      // Should always include DDSCAPS_TEXTURE
+    Caps2: UInt32;      // For cubic environment maps
+    Reserved: array[0..1] of UInt32; // Reserved
+  end;
+
+  { Record describing DDS file contents.}
+  TDDSurfaceDesc2 = packed record
+    Size: UInt32;       // Size of the structure = 124 Bytes
+    Flags: UInt32;      // Flags to indicate valid fields
+    Height: UInt32;     // Height of the main image in pixels
+    Width: UInt32;      // Width of the main image in pixels
+    PitchOrLinearSize: UInt32; // For uncomp formats number of bytes per
+                               // scanline. For comp it is the size in
+                               // bytes of the main image
+    Depth: UInt32;      // Only for volume text depth of the volume
+    MipMaps: Int32;     // Total number of levels in the mipmap chain
+    Reserved1: array[0..10] of UInt32; // Reserved
+    PixelFormat: TDDPixelFormat; // Format of the pixel data
+    Caps: TDDSCaps;       // Capabilities
+    Reserved2: UInt32;  // Reserved
+  end;
+
+  { DDS file header.}
+  TDDSFileHeader = packed record
+    Magic: UInt32;       // File format magic
+    Desc: TDDSurfaceDesc2; // Surface description
+  end;
+
+  { Resoirce types for D3D 10+ }
+  TD3D10ResourceDimension = (
+    D3D10_RESOURCE_DIMENSION_UNKNOWN   = 0,
+    D3D10_RESOURCE_DIMENSION_BUFFER    = 1,
+    D3D10_RESOURCE_DIMENSION_TEXTURE1D = 2,
+    D3D10_RESOURCE_DIMENSION_TEXTURE2D = 3,
+    D3D10_RESOURCE_DIMENSION_TEXTURE3D = 4
+  );
+
+  { Texture formats for D3D 10+ }
+  TDXGIFormat = (
+    DXGI_FORMAT_UNKNOWN                      = 0,
+    DXGI_FORMAT_R32G32B32A32_TYPELESS        = 1,
+    DXGI_FORMAT_R32G32B32A32_FLOAT           = 2,
+    DXGI_FORMAT_R32G32B32A32_UINT            = 3,
+    DXGI_FORMAT_R32G32B32A32_SINT            = 4,
+    DXGI_FORMAT_R32G32B32_TYPELESS           = 5,
+    DXGI_FORMAT_R32G32B32_FLOAT              = 6,
+    DXGI_FORMAT_R32G32B32_UINT               = 7,
+    DXGI_FORMAT_R32G32B32_SINT               = 8,
+    DXGI_FORMAT_R16G16B16A16_TYPELESS        = 9,
+    DXGI_FORMAT_R16G16B16A16_FLOAT           = 10,
+    DXGI_FORMAT_R16G16B16A16_UNORM           = 11,
+    DXGI_FORMAT_R16G16B16A16_UINT            = 12,
+    DXGI_FORMAT_R16G16B16A16_SNORM           = 13,
+    DXGI_FORMAT_R16G16B16A16_SINT            = 14,
+    DXGI_FORMAT_R32G32_TYPELESS              = 15,
+    DXGI_FORMAT_R32G32_FLOAT                 = 16,
+    DXGI_FORMAT_R32G32_UINT                  = 17,
+    DXGI_FORMAT_R32G32_SINT                  = 18,
+    DXGI_FORMAT_R32G8X24_TYPELESS            = 19,
+    DXGI_FORMAT_D32_FLOAT_S8X24_UINT         = 20,
+    DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS     = 21,
+    DXGI_FORMAT_X32_TYPELESS_G8X24_UINT      = 22,
+    DXGI_FORMAT_R10G10B10A2_TYPELESS         = 23,
+    DXGI_FORMAT_R10G10B10A2_UNORM            = 24,
+    DXGI_FORMAT_R10G10B10A2_UINT             = 25,
+    DXGI_FORMAT_R11G11B10_FLOAT              = 26,
+    DXGI_FORMAT_R8G8B8A8_TYPELESS            = 27,
+    DXGI_FORMAT_R8G8B8A8_UNORM               = 28,
+    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB          = 29,
+    DXGI_FORMAT_R8G8B8A8_UINT                = 30,
+    DXGI_FORMAT_R8G8B8A8_SNORM               = 31,
+    DXGI_FORMAT_R8G8B8A8_SINT                = 32,
+    DXGI_FORMAT_R16G16_TYPELESS              = 33,
+    DXGI_FORMAT_R16G16_FLOAT                 = 34,
+    DXGI_FORMAT_R16G16_UNORM                 = 35,
+    DXGI_FORMAT_R16G16_UINT                  = 36,
+    DXGI_FORMAT_R16G16_SNORM                 = 37,
+    DXGI_FORMAT_R16G16_SINT                  = 38,
+    DXGI_FORMAT_R32_TYPELESS                 = 39,
+    DXGI_FORMAT_D32_FLOAT                    = 40,
+    DXGI_FORMAT_R32_FLOAT                    = 41,
+    DXGI_FORMAT_R32_UINT                     = 42,
+    DXGI_FORMAT_R32_SINT                     = 43,
+    DXGI_FORMAT_R24G8_TYPELESS               = 44,
+    DXGI_FORMAT_D24_UNORM_S8_UINT            = 45,
+    DXGI_FORMAT_R24_UNORM_X8_TYPELESS        = 46,
+    DXGI_FORMAT_X24_TYPELESS_G8_UINT         = 47,
+    DXGI_FORMAT_R8G8_TYPELESS                = 48,
+    DXGI_FORMAT_R8G8_UNORM                   = 49,
+    DXGI_FORMAT_R8G8_UINT                    = 50,
+    DXGI_FORMAT_R8G8_SNORM                   = 51,
+    DXGI_FORMAT_R8G8_SINT                    = 52,
+    DXGI_FORMAT_R16_TYPELESS                 = 53,
+    DXGI_FORMAT_R16_FLOAT                    = 54,
+    DXGI_FORMAT_D16_UNORM                    = 55,
+    DXGI_FORMAT_R16_UNORM                    = 56,
+    DXGI_FORMAT_R16_UINT                     = 57,
+    DXGI_FORMAT_R16_SNORM                    = 58,
+    DXGI_FORMAT_R16_SINT                     = 59,
+    DXGI_FORMAT_R8_TYPELESS                  = 60,
+    DXGI_FORMAT_R8_UNORM                     = 61,
+    DXGI_FORMAT_R8_UINT                      = 62,
+    DXGI_FORMAT_R8_SNORM                     = 63,
+    DXGI_FORMAT_R8_SINT                      = 64,
+    DXGI_FORMAT_A8_UNORM                     = 65,
+    DXGI_FORMAT_R1_UNORM                     = 66,
+    DXGI_FORMAT_R9G9B9E5_SHAREDEXP           = 67,
+    DXGI_FORMAT_R8G8_B8G8_UNORM              = 68,
+    DXGI_FORMAT_G8R8_G8B8_UNORM              = 69,
+    DXGI_FORMAT_BC1_TYPELESS                 = 70,
+    DXGI_FORMAT_BC1_UNORM                    = 71,
+    DXGI_FORMAT_BC1_UNORM_SRGB               = 72,
+    DXGI_FORMAT_BC2_TYPELESS                 = 73,
+    DXGI_FORMAT_BC2_UNORM                    = 74,
+    DXGI_FORMAT_BC2_UNORM_SRGB               = 75,
+    DXGI_FORMAT_BC3_TYPELESS                 = 76,
+    DXGI_FORMAT_BC3_UNORM                    = 77,
+    DXGI_FORMAT_BC3_UNORM_SRGB               = 78,
+    DXGI_FORMAT_BC4_TYPELESS                 = 79,
+    DXGI_FORMAT_BC4_UNORM                    = 80,
+    DXGI_FORMAT_BC4_SNORM                    = 81,
+    DXGI_FORMAT_BC5_TYPELESS                 = 82,
+    DXGI_FORMAT_BC5_UNORM                    = 83,
+    DXGI_FORMAT_BC5_SNORM                    = 84,
+    DXGI_FORMAT_B5G6R5_UNORM                 = 85,
+    DXGI_FORMAT_B5G5R5A1_UNORM               = 86,
+    DXGI_FORMAT_B8G8R8A8_UNORM               = 87,
+    DXGI_FORMAT_B8G8R8X8_UNORM               = 88,
+    DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM   = 89,
+    DXGI_FORMAT_B8G8R8A8_TYPELESS            = 90,
+    DXGI_FORMAT_B8G8R8A8_UNORM_SRGB          = 91,
+    DXGI_FORMAT_B8G8R8X8_TYPELESS            = 92,
+    DXGI_FORMAT_B8G8R8X8_UNORM_SRGB          = 93,
+    DXGI_FORMAT_BC6H_TYPELESS                = 94,
+    DXGI_FORMAT_BC6H_UF16                    = 95,
+    DXGI_FORMAT_BC6H_SF16                    = 96,
+    DXGI_FORMAT_BC7_TYPELESS                 = 97,
+    DXGI_FORMAT_BC7_UNORM                    = 98,
+    DXGI_FORMAT_BC7_UNORM_SRGB               = 99,
+    DXGI_FORMAT_AYUV                         = 100,
+    DXGI_FORMAT_Y410                         = 101,
+    DXGI_FORMAT_Y416                         = 102,
+    DXGI_FORMAT_NV12                         = 103,
+    DXGI_FORMAT_P010                         = 104,
+    DXGI_FORMAT_P016                         = 105,
+    DXGI_FORMAT_420_OPAQUE                   = 106,
+    DXGI_FORMAT_YUY2                         = 107,
+    DXGI_FORMAT_Y210                         = 108,
+    DXGI_FORMAT_Y216                         = 109,
+    DXGI_FORMAT_NV11                         = 110,
+    DXGI_FORMAT_AI44                         = 111,
+    DXGI_FORMAT_IA44                         = 112,
+    DXGI_FORMAT_P8                           = 113,
+    DXGI_FORMAT_A8P8                         = 114,
+    DXGI_FORMAT_B4G4R4A4_UNORM               = 115
+  );
+
+  { DX10 extension header for DDS file format }
+  TDX10Header = packed record
+    DXGIFormat: TDXGIFormat;
+    ResourceDimension: TD3D10ResourceDimension;
+    MiscFlags: UInt32;
+    ArraySize: UInt32;
+    Reserved: UInt32;
+  end;
+
+procedure FillPixelFormat(Pix: TDDPixelFormat; Flags, BitCount, RedMask, GreenMask, BlueMask, AlphaMask: UInt32);
+begin
+  Pix.Flags := Flags;
+  Pix.BitCount := BitCount;
+  Pix.RedMask := RedMask;
+  Pix.GreenMask := GreenMask;
+  Pix.BlueMask := BlueMask;
+  Pix.AlphaMask := AlphaMask;
+end;
+
+var
+  Hdr: TDDSFileHeader;
+  i, j, ImageCount, FSaveDepth, FSaveMipMapCount: integer;
+begin
+  FSaveDepth := 1; //Need this info setting as a param. Its supposed to be Sets the depth (slices of volume texture or faces of cube map) of the next saved DDS file
+  FSaveMipMapCount := MipMapCount;
+
+  FillChar(Hdr, Sizeof(Hdr), 0);
+  Hdr.Magic := DDSMagic;
+  Hdr.Desc.Size := SizeOf(Hdr.Desc);
+  Hdr.Desc.Width := Width;
+  Hdr.Desc.Height := Height;
+  Hdr.Desc.Flags := DDS_SAVE_FLAGS;
+  Hdr.Desc.Caps.Caps1 := DDSCAPS_TEXTURE;
+  Hdr.Desc.PixelFormat.Size := SizeOf(Hdr.Desc.PixelFormat);
+  Hdr.Desc.PitchOrLinearSize := Datasize;
+  ImageCount := MipMapCount;
+
+  if MipMapCount > 1 then
+  begin
+    // Set proper flags if we have some mipmaps to be saved
+    Hdr.Desc.Flags := Hdr.Desc.Flags or DDSD_MIPMAPCOUNT;
+    Hdr.Desc.Caps.Caps1 := Hdr.Desc.Caps.Caps1 or DDSCAPS_MIPMAP or DDSCAPS_COMPLEX;
+    Hdr.Desc.MipMaps := MipMapCount;
+  end;
+
+  if IsCubeMap then
+  begin
+    // Set proper cube map flags - number of stored faces is taken
+    // from FSaveDepth
+    Hdr.Desc.Caps.Caps1 := Hdr.Desc.Caps.Caps1 or DDSCAPS_COMPLEX;
+    Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or DDSCAPS2_CUBEMAP;
+    J := DDSCAPS2_POSITIVEX;
+    for I := 0 to FSaveDepth - 1 do
+    begin
+      Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or J;
+      J := J shl 1;
+    end;
+    ImageCount := FSaveDepth * FSaveMipMapCount;
+  end
+  else if IsVolume then
+  begin
+    // Set proper flags for volume texture
+    Hdr.Desc.Flags := Hdr.Desc.Flags or DDSD_DEPTH;
+    Hdr.Desc.Caps.Caps1 := Hdr.Desc.Caps.Caps1 or DDSCAPS_COMPLEX;
+    Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or DDSCAPS2_VOLUME;
+    Hdr.Desc.Depth := FSaveDepth;
+    ImageCount := GetVolumeLevelCount(FSaveDepth, FSaveMipMapCount);
+  end;
+
+
+  // Now we set DDS pixel format for main image
+  if (DXTType = DXT1) or (DXTType = DXT3) or (DXTType = DXT5) then
+  begin
+    Hdr.Desc.PixelFormat.Flags := DDPF_FOURCC;
+    case DXTType of
+      DXT1: Hdr.Desc.PixelFormat.FourCC := FOURCC_DXT1;
+      DXT3: Hdr.Desc.PixelFormat.FourCC := FOURCC_DXT3;
+      DXT5: Hdr.Desc.PixelFormat.FourCC := FOURCC_DXT5;
+    end;
+  end
+  else
+  begin
+    case DXTType of
+      A8R8G8B8: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_RGB or DDPF_ALPHAPIXELS, 32, $00ff0000, $0000ff00, $000000ff, $ff000000);
+      A4R4G4B4: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_RGB or DDPF_ALPHAPIXELS, 16, $0f00, $00f0, $000f, $f000);
+      A1R5G5B5: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_RGB or DDPF_ALPHAPIXELS, 32, $00ff0000, $0000ff00, $000000ff, $ff000000);
+
+      R8G8B8: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_RGB, 24, $ff0000, $00ff00, $0000ff, 0);
+      X1R5G5B5: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_RGB, 16, $7c00, $03e0, $001f, 0);
+      R5G6B5: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_RGB, 16, $f800, $07e0, $001f, 0);
+
+      A8: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_ALPHAPIXELS, 8, 0, 0, 0, $ff);
+      L8: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_LUMINANCE, 8, $ff, 0, 0, 0);
+      //AL8: Hdr.Desc.PixelFormat.FourCC :=; Unused in Psychonauts?
+      V8U8: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_BUMPDUDV, 16, $00ff, $ff00, 0, 0);
+      V16U16: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_BUMPDUDV, 32, $0000ffff, $ffff0000, 0, 0);
+      PAL8: FillPixelFormat(Hdr.Desc.PixelFormat, $00000020, 8, 0, 0, 0, 0); //unsure
+    end;
+  end;
+
+  DestStream.Position := 0;
+  DestStream.Write(Hdr, SizeOf(TDDSFileHeader));
+
 end;
 
 procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer;

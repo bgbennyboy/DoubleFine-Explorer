@@ -49,7 +49,7 @@ type
     R8G8B8,
     A4R4G4B4,
     A1R5G5B5,
-    A0R5G5B5,
+    X1R5G5B5,
     R5G6B5,
     A8,
     L8,

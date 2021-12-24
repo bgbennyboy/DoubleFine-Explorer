@@ -316,9 +316,9 @@ begin
         end;
       end;
 
-        Log('TextureSize=' + IntToStr(TextureSize) + ' Width=' + IntToStr(TextureWidth) + ' Height=' + IntToStr(TextureHeight) + ' HasPalette=' + inttostr(Has_Palette) + ' AnimFrameCount=' + IntToStr(AnimFrameCount) + ' TextureType=' + TRttiEnumerationType.GetName(TextureType) + ' TextureFormat=' + TRttiEnumerationType.GetName(TextureFormat) + ' TextureNumMipmaps=' + inttostr(TextureNumMipmaps));
+      Log(FileObject.FileName + ' TextureSize=' + IntToStr(TextureSize) + ' Width=' + IntToStr(TextureWidth) + ' Height=' + IntToStr(TextureHeight) + ' HasPalette=' + inttostr(Has_Palette) + ' AnimFrameCount=' + IntToStr(AnimFrameCount) + ' TextureType=' + TRttiEnumerationType.GetName(TextureType) + ' TextureFormat=' + TRttiEnumerationType.GetName(TextureFormat) + ' TextureNumMipmaps=' + inttostr(TextureNumMipmaps));
 
-        CalculatedTextureSize := CalculateFullTextureSize(TextureNumMipmaps, TextureWidth, TextureHeight, TextureFormat);
+      CalculatedTextureSize := CalculateFullTextureSize(TextureNumMipmaps, TextureWidth, TextureHeight, TextureFormat);
 
       if TextureType = Cubemap then
         CalculatedTextureSize := CalculatedTextureSize * 6;
@@ -455,7 +455,7 @@ begin
   case TextureFormat of
     A8R8G8B8, V16U16:                           result := (Width * Height) * 4;
     R8G8B8:                                     result := (Width * Height) * 3;
-    A4R4G4B4, A1R5G5B5, A0R5G5B5, R5G6B5, V8U8: result := (Width * Height) * 2;
+    A4R4G4B4, A1R5G5B5, X1R5G5B5, R5G6B5, V8U8: result := (Width * Height) * 2;
     L8,A8, AL8, PAL8:                           result := (Width * Height);
     DXT1:                                    result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 8;
     DXT3, DXT5:                           result := Max(1, ((Width + 3) div 4)) * Max(1, ((Height + 3) div 4)) * 16;
