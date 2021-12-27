@@ -878,6 +878,9 @@ begin
   Result := true;
 end;
 
+
+//New method for adding a suitable DDS header. Only used in Psychonauts 1 so far. Eventually move all headerless DDS to this.
+//Majority of the code in this method from the Vampyre Imaging Library
 procedure TDFExplorerBase.AddDDSHeaderToStreamNEW(Width, Height, DataSize: integer;
   DXTType: TDDSTextureFormat; DestStream: TStream; IsCubemap: boolean = false;
    IsVolume: boolean = false; MipmapCount: integer = 1);
@@ -1135,11 +1138,10 @@ type
 
 var
   Hdr: TDDSFileHeader;
-  i, {ImageCount,FSaveMipMapCount,} FSaveDepth: integer;
+  i, FSaveDepth: integer;
   j: cardinal;
 begin
   FSaveDepth := 6; //Need this info setting as a param. Its supposed to be: Sets the depth (slices of volume texture or faces of cube map) of the next saved DDS file
-  //FSaveMipMapCount := MipMapCount;
 
   FillChar(Hdr, Sizeof(Hdr), 0);
   Hdr.Magic := DDSMagic;
@@ -1150,7 +1152,6 @@ begin
   Hdr.Desc.Caps.Caps1 := DDSCAPS_TEXTURE;
   Hdr.Desc.PixelFormat.Size := SizeOf(Hdr.Desc.PixelFormat);
   Hdr.Desc.PitchOrLinearSize := Datasize;
-  //ImageCount := MipMapCount;
 
   if MipMapCount > 1 then
   begin
@@ -1163,7 +1164,6 @@ begin
   if IsCubeMap then
   begin
     // Set proper cube map flags - number of stored faces is taken
-    // from FSaveDepth
     Hdr.Desc.Caps.Caps1 := Hdr.Desc.Caps.Caps1 or DDSCAPS_COMPLEX;
     Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or DDSCAPS2_CUBEMAP;
     J := DDSCAPS2_POSITIVEX;
@@ -1172,7 +1172,6 @@ begin
       Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or J;
       J := J shl 1;
     end;
-    //ImageCount := FSaveDepth * FSaveMipMapCount;
   end
   else if IsVolume then
   begin
@@ -1181,14 +1180,12 @@ begin
     Hdr.Desc.Caps.Caps1 := Hdr.Desc.Caps.Caps1 or DDSCAPS_COMPLEX;
     Hdr.Desc.Caps.Caps2 := Hdr.Desc.Caps.Caps2 or DDSCAPS2_VOLUME;
     Hdr.Desc.Depth := FSaveDepth;
-    //ImageCount := GetVolumeLevelCount(FSaveDepth, FSaveMipMapCount);
   end;
 
 
   // Now we set DDS pixel format for main image
   if (DXTType = DXT1) or (DXTType = DXT3) or (DXTType = DXT5) then
   begin
-    //Hdr.Desc.PixelFormat.Flags := DDPF_FOURCC;
     FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_FOURCC, 0, 0, 0, 0, 0);
     case DXTType of
       DXT1: Hdr.Desc.PixelFormat.FourCC := FOURCC_DXT1;
@@ -1212,13 +1209,12 @@ begin
       //AL8: Hdr.Desc.PixelFormat.FourCC :=; Unused in Psychonauts?
       V8U8: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_BUMPDUDV, 16, $00ff, $ff00, 0, 0);
       V16U16: FillPixelFormat(Hdr.Desc.PixelFormat, DDPF_BUMPDUDV, 32, $0000ffff, $ffff0000, 0, 0);
-      PAL8: FillPixelFormat(Hdr.Desc.PixelFormat, $00000020, 8, 0, 0, 0, 0); //unsure
+      PAL8: FillPixelFormat(Hdr.Desc.PixelFormat, $00000020, 8, 0, 0, 0, 0); //unsure about this
     end;
   end;
 
   DestStream.Position := 0;
   DestStream.Write(Hdr, SizeOf(TDDSFileHeader));
-
 end;
 
 procedure TDFExplorerBase.AddDDSHeaderToStream(Width, Height, DataSize: integer;

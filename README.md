@@ -1,5 +1,5 @@
-﻿# Double Fine Explorer  
-Version 1.3.9<br>By Bennyboy<br>[Quick and Easy Software](http://quickandeasysoftware.net/)
+﻿# DoubleFine Explorer  
+Version 1.4<br>By Bennyboy<br>[Quick and Easy Software](http://quickandeasysoftware.net/)
 
  An explorer tool for games by Double Fine Productions. It supports games that use the Moai, Buddha and Remonkeyed engines. That's most games the company has released.
  
@@ -7,10 +7,8 @@ It enables you to view, extract and convert resources. This includes text, speec
   
 
 ## New in this version
- - Added support for the .isb audio bundles in Psychonauts. These are found in the pc version and contain the music, speech and sfx. So all Psychonauts audio can now be played and dumped.
-- Added directory support to Psychonauts .pkg bundles. This means that the resources in the bundle are listed and dumped with their original folder names eg 'textures\ui\sayline heads\'. 
-We've known there was a directory section in the bundle for years but no-one could ever figure out the format of how it applied to the files. Many thanks to Watto for figuring out the algorithm after all this time.
-- Fixed files in Psychonauts .pkg bundles missing their file extensions.
+ - Added support for the ppf level pack bundles in Psychonauts 1. Many thanks to [John Peel](https://github.com/JohnPeel/repkg/wiki/PPF-File-Format) for excellent his work on reverse engineering the new format. 
+This means that the newer Steam/GOG versions of the game are now fully supported. Anyone needing to look inside the Xbox or PS2 versions or indeed browse the level pack files in the original release can still use my old [Psychonauts Explorer.](http://quickandeasysoftware.net/software/psychonauts-explorer)  program.
 
 ## How to use it
 
@@ -59,7 +57,7 @@ The pc versions of the following games are supported. Versions for other platfor
 -   Headlander
 -   Iron Brigade
 -   Massive Chalice
--   Psychonauts (the main .pkg file and the audio .isb files but not the level .ppf files. See the Limitations section below for more information).
+-   Psychonauts 1 (The newer version that's on Steam and GOG. See the Limitations section below for more information).
 -   Stacking
 -   The Cave
 -   The Amnesia Fortnight prototypes seem to work but aren't really tested
@@ -67,7 +65,7 @@ The pc versions of the following games are supported. Versions for other platfor
 
 ## Limitations and bugs
 
-- Psychonauts: The main 'Psychonautsdata2.pkg' file and the audio .isb files are supported. Unfortunately the level pack files (.ppf) aren't. This is because the new version of Psychonauts that's on Steam and GOG changed the format of these files. If you have the original version of Psychonauts you can open all the level files in [Psychonauts Explorer.](http://quickandeasysoftware.net/software/psychonauts-explorer)
+- Psychonauts 1: The new version of Psychonauts 1 that's on Steam and GOG changed the format of the level pack files (.ppf). DoubleFine Explorer only supports this newer version, If you have the original version you can open all the level files in [Psychonauts Explorer.](http://quickandeasysoftware.net/software/psychonauts-explorer)
   
 - There are a few audio files that don't decode correctly. This is probably because they use a different codec. There are known problems with UI.fsb in The Cave and with 5 fsb files in Iron Brigade.  
   
@@ -95,4 +93,4 @@ All my software is completely free. If you find this program useful please consi
 The software is provided "as-is" and without warranty of any kind, express, implied or otherwise, including without limitation, any warranty of merchantability or fitness for a particular purpose. In no event shall the initial developer or any other contributor be liable for any special, incidental, indirect or consequential damages of any kind, or any damages whatsoever resulting from loss of use, data or profits, whether or not advised of the possibility of damage, and on any theory of liability, arising out of or in connection with the use or performance of this software.  
 
 <br><br>
-Last updated 16/01/21
+Last updated 27/12/21

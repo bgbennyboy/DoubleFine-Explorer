@@ -102,13 +102,6 @@ type
     DDS_HEADERLESS_FT_CHNK
   );
 
-  {TDXTTYPE = (
-    DXT1,
-    DXT3,
-    DXT5,
-    NO_FOURCC
-  );}
-
   TFSBCodec = (
     FMOD_SOUND_FORMAT_NONE,             //* Unitialized / unknown. */
     FMOD_SOUND_FORMAT_PCM8,             //* 8bit integer PCM data. */
