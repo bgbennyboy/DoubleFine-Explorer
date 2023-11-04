@@ -48,12 +48,6 @@ procedure DecompressZlib(Source: TStream; UnCompressedSize: integer;
 var
   SourcePos: integer;
 begin
-  {
-  Older TT games have no history window.
-  Starting with sam and max 301 they've hidden the zlib header so
-  history window is -15
-  }
-
   SourcePos := Source.Position;
   if Private_DecompressZLib(Source, UncompressedSize, 0, Dest) = false then
   begin

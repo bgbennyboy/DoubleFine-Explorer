@@ -18,7 +18,7 @@ interface
 uses
   classes, sysutils, Contnrs, forms,
   uDFExplorer_BaseBundleManager, uFileReader, uMemReader, uDFExplorer_Types,
-  uDFExplorer_Funcs, uZlib;
+  uDFExplorer_Funcs, uZlib, uXCompress;
 
 type
   TPAKManager = class (TBundleManager)
@@ -88,6 +88,9 @@ begin
 
   fBundleFileName:=ExtractFileName(ResourceFile);
   BundleFiles:=TObjectList.Create(true);
+
+  //Load it here just in case XMemcompress used
+  XCompress_Load_DLL;
 
   if DetectBundle = false then
     raise EInvalidFile.Create( strErrInvalidFile );
@@ -425,7 +428,8 @@ Think this is the structure
 
     case FileObject.CompressionType of
       4: FileObject.Compressed := false;
-      8: FileObject.Compressed := true;
+      8: FileObject.Compressed := true; //ZLIB
+     12: FileObject.Compressed := true; //XMemCompress Xbox
     else Log('Unknown compression type! ' + inttostr(FileObject.CompressionType));
     end;
 
@@ -714,8 +718,12 @@ begin
       TempStream.CopyFrom(fDataBundle, TDFFile(BundleFiles.Items[FileNo]).Size);
       //tempstream.SaveToFile('c:\users\ben\desktop\testfile');
       Tempstream.Position := 0;
-      DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize,
-        DestStream);
+
+      //Comp type 12 is Xbox XMemDecompress. Others are ZLib
+      if TDFFile(BundleFiles.Items[FileNo]).CompressionType = 12 then
+        DecompressXCompress(TempStream, DestStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize)
+      else
+        DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize, DestStream);
     finally
       TempStream.Free;
     end
