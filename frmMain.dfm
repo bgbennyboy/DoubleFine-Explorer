@@ -13239,6 +13239,8 @@ object formMain: TformMain
     OnDblClick = TreeDblClick
     OnGetText = TreeGetText
     OnGetImageIndex = TreeGetImageIndex
+    Touch.InteractiveGestures = [igPan, igPressAndTap]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
     Columns = <
       item
         MaxWidth = 1000

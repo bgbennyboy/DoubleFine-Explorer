@@ -22,12 +22,32 @@ type
     UnCompressedSize,
     CompressedSize: WORD;
   end;
+
+  XMEMCODEC_TYPE = ( XMEMCODEC_DEFAULT = 0, XMEMCODEC_LZX = 1 );
+  XMEMCODEC_PARAMETERS_LZX = packed record
+    Flags: Integer;
+    WindowSize: Integer;
+    CompressionPartitionSize: Integer;
+  end;
+
 var
-  DllLib : TMemoryModule;
+  DllLib : PMemoryModule;
+  XMemCreateDecompressionContext: function(CodecType: XMEMCODEC_TYPE; pCodecParams: Pointer; Flags: Integer; pContext: PInteger): HRESULT; stdcall;
+  XMemDestroyDecompressionContext: procedure (Context: Integer); stdcall;
+  XMemResetDecompressionContext: function(Context: Integer): HRESULT; stdcall;
+  XMemDecompressStream: function(Context: Integer; pDestination: Pointer; pDestSize: PInteger; pSource: Pointer; pSrcSize: PInteger): HRESULT; stdcall;
+
+
   XDecompress: function(inData: PAnsiChar;  inlen: integer;  outdata: PAnsiChar;  outlen: integer): integer; cdecl;
   LZXinit: function (window: integer): Integer; cdecl;
   procedure XCompress_Load_DLL;
-  procedure DecompressXCompress(Source: TStream; Dest: TStream; UncompressedSize: integer);
+  procedure DecompressXCompress_Old(Source: TStream; Dest: TStream; UncompressedSize: integer);
+  procedure DecompressXCompress(Source: TStream; Dest: TStream; CompressedSize, UncompressedSize: integer);
+
+
+
+const
+  XMEMCOMPRESS_STREAM = $00000001;
 
 implementation
 
@@ -39,21 +59,21 @@ begin
     exit; //already loaded
 
   //Load it from resource into memory
-  ResStream := TResourceStream.Create(hInstance, 'XMEMDLL', RT_RCDATA);
+  ResStream := TResourceStream.Create(hInstance, 'xcompressdll', RT_RCDATA);
   try
     ResStream.Position := 0;
-    DllLib := MemoryLoadLibary(ResStream.Memory);
+    if MemoryLoadLibrary(ResStream.Memory, DLLLib) < 0 then
+    begin
+      raise Exception.Create('XCompress dll load failed!');
+      exit;
+    end;
   finally
     ResStream.Free;
   end;
 
-  if DllLib = nil then
-  begin
-    raise Exception.Create('XCompress dll load failed!');
-    exit;
-  end;
 
-  XDecompress := MemoryGetProcAddress(DllLib, PAnsiChar('LZXdecompress'));
+
+  {XDecompress := MemoryGetProcAddress(DllLib, PAnsiChar('LZXdecompress'));
   if not Assigned (XDecompress) then
   begin
     raise Exception.Create('Couldnt find decompression function in DLL');
@@ -63,7 +83,32 @@ begin
   if not Assigned (LZXinit) then
   begin
     raise Exception.Create('Couldnt find LZXinit function in DLL');
+  end;}
+
+  XMemCreateDecompressionContext := MemoryGetProcAddress(DllLib, PAnsiChar('XMemCreateDecompressionContext'));
+  if not Assigned (XMemCreateDecompressionContext) then
+  begin
+    raise Exception.Create('Couldnt find XMemCreateDecompressionContext function in DLL');
   end;
+
+  XMemDestroyDecompressionContext := MemoryGetProcAddress(DllLib, PAnsiChar('XMemDestroyDecompressionContext'));
+  if not Assigned (XMemDestroyDecompressionContext) then
+  begin
+    raise Exception.Create('Couldnt find XMemDestroyDecompressionContext function in DLL');
+  end;
+
+  XMemResetDecompressionContext := MemoryGetProcAddress(DllLib, PAnsiChar('XMemResetDecompressionContext'));
+  if not Assigned (XMemResetDecompressionContext) then
+  begin
+    raise Exception.Create('Couldnt find XMemResetDecompressionContext function in DLL');
+  end;
+
+  XMemDecompressStream := MemoryGetProcAddress(DllLib, PAnsiChar('XMemDecompressStream'));
+  if not Assigned (XMemDecompressStream) then
+  begin
+    raise Exception.Create('Couldnt find XMemDecompressStream function in DLL');
+  end;
+
 end;
 
 function ReadBlockSize(Stream: TStream): LZXBlockSize;
@@ -88,7 +133,7 @@ begin
   end;
 end;
 
-procedure DecompressXCompress(Source: TStream; Dest: TStream; UncompressedSize: integer);
+procedure DecompressXCompress_Old(Source: TStream; Dest: TStream; UncompressedSize: integer);
 var
   //OutResult : integer;
   Identifier: byte;
@@ -122,6 +167,41 @@ begin
    end;
   end;
   Dest.Position := 0;
+end;
+
+procedure DecompressXCompress(Source: TStream; Dest: TStream; CompressedSize, UncompressedSize: integer);
+var
+ Contex: Integer;
+ Result: HRESULT;
+ codec_parameters: XMEMCODEC_PARAMETERS_LZX;
+ pSource, pDest: Pointer;
+ dwInSize, dwOutSize: DWORD;
+ tmp: integer;
+begin
+   Contex:=0;
+   Result:= XMemCreateDecompressionContext(XMEMCODEC_LZX, @codec_parameters, XMEMCOMPRESS_STREAM, @Contex);
+   if Succeeded(Result) then
+    begin
+      Result:= XMemResetDecompressionContext(Contex);
+      dwInSize := CompressedSize;
+      dwOutSize := UncompressedSize;
+      GetMem(pSource, dwInSize);
+      ZeroMemory(pSource, dwInSize);
+      Source.Read(pSource^, dwInSize);
+      pDest:= GetMemory(dwOutSize);
+      ZeroMemory(pDest, dwOutSize);
+      tmp:=dwOutSize;
+      Result:= XMemDecompressStream(Contex, pDest, @dwOutSize, pSource, @dwInSize);
+      if Succeeded(Result) then
+        begin
+          dwOutSize:=tmp;
+          Dest.Write(pDest^, dwOutSize);
+          FreeMemory(pDest);
+          FreeMemory(pSource);
+        end;
+      XMemDestroyDecompressionContext(Contex);
+      Dest.Position := 0;
+    end;
 end;
 
 Initialization

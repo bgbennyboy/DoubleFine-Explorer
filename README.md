@@ -1,5 +1,5 @@
 ﻿# DoubleFine Explorer  
-Version 1.4<br>By Bennyboy<br>[Quick and Easy Software](http://quickandeasysoftware.net/)
+Version 1.4.1<br>By Bennyboy<br>[Quick and Easy Software](http://quickandeasysoftware.net/)
 
  An explorer tool for games by Double Fine Productions. It supports games that use the Moai, Buddha and Remonkeyed engines. That's most games the company has released.
  
@@ -7,8 +7,7 @@ It enables you to view, extract and convert resources. This includes text, speec
   
 
 ## New in this version
- - Added support for the ppf level pack bundles in Psychonauts 1. Many thanks to [John Peel](https://github.com/JohnPeel/repkg/wiki/PPF-File-Format) for excellent his work on reverse engineering the new format. 
-This means that the newer Steam/GOG versions of the game are now fully supported. Anyone needing to look inside the Xbox or PS2 versions or indeed browse the level pack files in the original release can still use my old [Psychonauts Explorer.](http://quickandeasysoftware.net/software/psychonauts-explorer)  program.
+ - Added support for Kinect Party and most of the filetypes inside.  However textures aren't yet supported. 
 
 ## How to use it
 
@@ -61,6 +60,7 @@ The pc versions of the following games are supported. Versions for other platfor
 -   Stacking
 -   The Cave
 -   The Amnesia Fortnight prototypes seem to work but aren't really tested
+- Kinect Party (Xbox)
 
 
 ## Limitations and bugs
@@ -93,4 +93,4 @@ All my software is completely free. If you find this program useful please consi
 The software is provided "as-is" and without warranty of any kind, express, implied or otherwise, including without limitation, any warranty of merchantability or fitness for a particular purpose. In no event shall the initial developer or any other contributor be liable for any special, incidental, indirect or consequential damages of any kind, or any damages whatsoever resulting from loss of use, data or profits, whether or not advised of the possibility of damage, and on any theory of liability, arising out of or in connection with the use or performance of this software.  
 
 <br><br>
-Last updated 27/12/21
+Last updated 05/10/23

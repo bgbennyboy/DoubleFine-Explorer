@@ -1,2 +1,2 @@
 luadec RCData "Resources\\luadec.exe"
-XMEMDLL RCDATA "Resources\\xcompress_cpp.dll"
+xcompressdll RCDATA "Resources\\xcompress.dll"

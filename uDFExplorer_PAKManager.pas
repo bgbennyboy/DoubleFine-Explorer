@@ -721,7 +721,7 @@ begin
 
       //Comp type 12 is Xbox XMemDecompress. Others are ZLib
       if TDFFile(BundleFiles.Items[FileNo]).CompressionType = 12 then
-        DecompressXCompress(TempStream, DestStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize)
+        DecompressXCompress(TempStream, DestStream, TDFFile(BundleFiles.Items[FileNo]).Size, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize)
       else
         DecompressZLib(TempStream, TDFFile(BundleFiles.Items[FileNo]).UnCompressedSize, DestStream);
     finally
